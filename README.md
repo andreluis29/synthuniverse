@@ -64,6 +64,10 @@ const CONFIG = { musicUrl: 'musica.mp3' };
 
 Coloque o arquivo de áudio na mesma pasta. Deixe a string vazia para usar a trilha sintetizada. O visitante também pode carregar uma música pelo botão **Sua música**. Os navegadores só tocam áudio depois de um clique, por isso o som começa na primeira interação.
 
+## Publicar no GitHub Pages
+
+Em **Settings → Pages**, escolha **Deploy from a branch**, a branch `main` e a pasta `/ (root)`. O site fica em `https://<usuário>.github.io/synthuniverse/`. As proteções de segurança e os cuidados com repositório privado estão em [docs/COMO-FUNCIONA.md](docs/COMO-FUNCIONA.md#15-segurança-e-publicação).
+
 ## Documentação
 
 Para entender como tudo funciona (máquina de cenas, motor de som, renderização, regiões do universo infinito) e onde ajustar cada valor, leia [docs/COMO-FUNCIONA.md](docs/COMO-FUNCIONA.md).

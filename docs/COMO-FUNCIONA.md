@@ -22,6 +22,7 @@ O projeto usa só HTML, CSS e JavaScript, sem bibliotecas nem etapa de build. A 
 12. [Acessibilidade e desempenho](#12-acessibilidade-e-desempenho)
 13. [Personalização rápida](#13-personalização-rápida)
 14. [Como estender](#14-como-estender)
+15. [Segurança e publicação](#15-segurança-e-publicação)
 
 ---
 
@@ -360,3 +361,38 @@ A função `frame()` roda a cada quadro, por `requestAnimationFrame`, e executa 
 **Nova progressão de acordes**
 
 Adicione `{ ch: [[...],[...],[...],[...]], rt: [...] }` em `PROGS`. Cada acorde é uma lista de três notas MIDI (60 = Dó central) e `rt` traz as fundamentais do baixo, uma oitava abaixo.
+
+---
+
+## 15. Segurança e publicação
+
+O site é estático: não tem servidor, banco de dados, login, formulários, cookies nem armazenamento no navegador. Nenhum dado do visitante é coletado ou enviado.
+
+### Proteções aplicadas
+
+| Proteção | Onde | O que faz |
+|---|---|---|
+| Content Security Policy | `<meta http-equiv>` em `index.html` | Só executa `script.js` deste site; estilos só deste site e do Google Fonts; fontes só do Google Fonts; imagens só deste site e `data:`; áudio só deste site e `blob:`. Bloqueia conexões de rede por script (`connect-src 'none'`), plugins, formulários e troca de `<base>`, e força HTTPS |
+| Sem HTML dinâmico | `script.js` | Todo texto é escrito com `textContent`; não há `innerHTML`, `eval`, `new Function`, scripts ou eventos inline |
+| Música do visitante | botão "Sua música" | Aceita só arquivos `audio/*`, toca a partir de uma URL `blob:` local (o arquivo nunca sai do computador), libera a URL anterior da memória e limita o nome exibido a 60 caracteres |
+| Política de referência | `<meta name="referrer">` | Envia a outros sites só a origem da página, nunca o caminho completo |
+| Sem dependências | — | Nenhuma biblioteca de terceiros, nada de `npm install`, sem risco de cadeia de suprimentos |
+| `.nojekyll` | raiz | O GitHub Pages publica os arquivos como estão, sem processar com Jekyll |
+
+O Google Fonts é a única origem externa. Os navegadores dos visitantes se conectam aos servidores do Google para baixar as fontes, o que expõe o IP deles ao Google. Para eliminar essa conexão, baixe os arquivos `.woff2` das fontes, coloque-os no repositório, troque o `<link>` do Google Fonts por `@font-face` em `style.css` e remova `https://fonts.googleapis.com` e `https://fonts.gstatic.com` da CSP (com `font-src 'self'`).
+
+**Música de outro domínio.** Se `CONFIG.musicUrl` apontar para fora do site, acrescente o domínio em `media-src` na CSP (por exemplo `media-src 'self' blob: https://meu-cdn.com`). O servidor de lá também precisa permitir CORS, porque o áudio passa pelo analisador do Web Audio.
+
+### Publicar no GitHub Pages
+
+1. No repositório, abra **Settings → Pages**.
+2. Em **Build and deployment**, escolha **Deploy from a branch**, a branch `main` e a pasta `/ (root)`, e clique em **Save**.
+3. Depois de um ou dois minutos o site fica em `https://<usuário>.github.io/synthuniverse/`.
+4. Marque **Enforce HTTPS**, se a opção aparecer desmarcada.
+
+Todos os caminhos do site são relativos, então ele funciona dentro da subpasta `/synthuniverse/` sem ajustes.
+
+**Repositório privado.** No plano gratuito do GitHub, o Pages só funciona com repositórios públicos. Repositórios privados exigem GitHub Pro, Team ou Enterprise. E mesmo com repositório privado, **o site publicado é sempre público**.
+
+**E-mail nos commits.** Se o repositório ficar público, o e-mail de autor dos commits fica visível no histórico. Para os próximos commits, ative **Settings → Emails → Keep my email addresses private** na sua conta do GitHub e use o endereço `…@users.noreply.github.com` que ele mostra (`git config user.email`). Os commits antigos só mudam reescrevendo o histórico.
+
