@@ -202,3 +202,59 @@ const Sound = (() => {
   };
 })();
 
+/* ============================ RETRATO ============================ */
+const el = {
+  app: $('app'), figure: $('figure'), lipUp: $('lipUp'), lipLow: $('lipLow'), mouth: $('mouthLine'),
+  crease: $('crease'), dimple: $('dimple'), cheek: $('cheekLight'), cheekR: $('cheekLightR'), eyeN: $('eyeN'), eyeF: $('eyeF'), irisN: $('irisN'), irisF: $('irisF'),
+  brows: $('brows'), headF: $('headFront'), headB: $('headBack'), body: $('bodyG')
+};
+const P = { s: 0, target: 0.12, nextSwap: 1.4, blinkT: -1, nextBlink: 2.6, hover: false, tapUntil: 0, force: false,
+  gx: 0, gy: 0, tgx: 0, tgy: 0, nextLook: 1.2 };
+const f2 = n => n.toFixed(2);
+
+function applyFace(s, bl, t){
+  const m = 1.2*s, cLx = 194 - 2*s, cRx = 234 + 2*s, cy = 248 - 4.5*s, u = s;
+  el.mouth.setAttribute('d', `M${f2(cLx)},${f2(cy)} C204,${f2(250 + m)} 224,${f2(250 + m)} ${f2(cRx)},${f2(cy)}`);
+  el.lipUp.setAttribute('d', `M${f2(cLx)},${f2(cy)} C199,${f2(244 - u)} 204,${f2(239 - u)} 208,${f2(239 - u)} C211,${f2(239 - u)} 213,${f2(241 - u)} 214,${f2(241 - u)} C215,${f2(241 - u)} 217,${f2(239 - u)} 220,${f2(239 - u)} C224,${f2(239 - u)} 229,${f2(244 - u)} ${f2(cRx)},${f2(cy)} C224,${f2(250.5 + m)} 204,${f2(250.5 + m)} ${f2(cLx)},${f2(cy)} Z`);
+  el.lipLow.setAttribute('d', `M${f2(cLx + 2)},${f2(cy + 1.5)} C202,${f2(259 + 0.5*s)} 226,${f2(259 + 0.5*s)} ${f2(cRx - 2)},${f2(cy + 1.5)} C224,${f2(252 + m)} 204,${f2(252 + m)} ${f2(cLx + 2)},${f2(cy + 1.5)} Z`);
+  el.crease.setAttribute('opacity', f2(s * 0.4));
+  el.dimple.setAttribute('opacity', f2(s * 0.4));
+  el.cheek.setAttribute('cy', f2(208 - 4*s)); el.cheekR.setAttribute('cy', f2(208 - 4*s));
+  const k = Math.max(0.08, 1 - 0.2*s - 0.92*bl);
+  el.eyeN.setAttribute('transform', `translate(187 170) scale(1 ${f2(k)}) translate(-187 -170)`);
+  el.eyeF.setAttribute('transform', `translate(241 170) scale(1 ${f2(k)}) translate(-241 -170)`);
+  const gx = P.gx - 1.2, gy = P.gy - 0.4*s;
+  el.irisN.setAttribute('transform', `translate(${f2(gx)} ${f2(gy)})`);
+  el.irisF.setAttribute('transform', `translate(${f2(gx)} ${f2(gy)})`);
+  el.brows.setAttribute('transform', `translate(0 ${f2(-1.4*s)})`);
+  const sway = REDUCED ? 0 : Math.sin(t * 0.7) * 0.6;
+  const rot = `rotate(${f2(-1.5 + sway - 1.2*s)} 214 300)`;
+  el.headF.setAttribute('transform', rot); el.headB.setAttribute('transform', rot);
+  el.body.setAttribute('transform', `translate(0 ${REDUCED ? 0 : f2(Math.sin(t * 1.6) * 1.4)})`);
+}
+function updatePortrait(dt, t){
+  P.nextSwap -= dt;
+  if (P.nextSwap <= 0){ const toBig = P.target < 0.5; P.target = toBig ? 1 : 0.12; P.nextSwap = toBig ? 1.6 + Math.random()*1.2 : 2 + Math.random()*2.2; }
+  const tgt = (P.hover || P.force || t < P.tapUntil) ? 1 : P.target;
+  P.s += (tgt - P.s) * Math.min(1, dt * (tgt > P.s ? 5 : 2.6));
+  // olhar natural: pequenos movimentos (sacadas) em direção a quem olha
+  P.nextLook -= dt;
+  if (P.nextLook <= 0){
+    P.nextLook = 0.9 + Math.random() * 2.2;
+    const away = Math.random() < 0.18;
+    P.tgx = away ? (Math.random() < 0.5 ? -2.8 : 2.8) : (Math.random() - 0.5) * 1.4;
+    P.tgy = away ? (Math.random() - 0.5) * 1.6 : (Math.random() - 0.5) * 0.8;
+  }
+  if (P.hover || t < P.tapUntil){ P.tgx = 0; P.tgy = 0; }
+  const ease = Math.min(1, dt * 18);
+  P.gx += (P.tgx - P.gx) * ease; P.gy += (P.tgy - P.gy) * ease;
+  P.nextBlink -= dt;
+  if (P.nextBlink <= 0 && P.blinkT < 0){ P.blinkT = 0; P.nextBlink = 2.4 + Math.random()*3.6; }
+  let bl = 0;
+  if (P.blinkT >= 0){ P.blinkT += dt; const ph = P.blinkT / 0.17; bl = ph >= 1 ? 0 : Math.sin(Math.PI * ph); if (ph >= 1) P.blinkT = -1; }
+  applyFace(P.s, bl, t);
+}
+el.figure.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') P.hover = true; });
+el.figure.addEventListener('pointerleave', () => { P.hover = false; });
+el.figure.addEventListener('pointerdown', () => { P.tapUntil = T + 1.8; });
+
