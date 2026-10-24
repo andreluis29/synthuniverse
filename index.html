@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>synthuniverse</title>
 <meta name="description" content="Um retrato synthwave que se dissolve em um universo infinito.">
+<!--
+  Política de segurança: só carrega scripts e estilos deste site, as fontes do
+  Google Fonts e mídia local (blob:) ou do próprio site. Bloqueia plugins,
+  formulários, troca de <base> e qualquer conexão de rede feita por script.
+  Se CONFIG.musicUrl apontar para outro domínio, inclua esse domínio em media-src.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Chakra+Petch:wght@400;500;600&display=swap">

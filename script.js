@@ -1050,9 +1050,16 @@ function restart(){
 
 ui.cta.addEventListener('click', () => scene === 'portrait' ? toCosmos() : restart());
 ui.soundBtn.addEventListener('click', () => { if (!Sound.running) Sound.start(); else Sound.setMuted(!Sound.muted); });
+// a música escolhida pelo visitante fica só no navegador dele (URL blob:), nada é enviado
+let trackUrl = null;
 $('trackFile').addEventListener('change', e => {
-  const f = e.target.files && e.target.files[0]; if (!f) return;
-  Sound.useTrack(URL.createObjectURL(f), f.name.replace(/\.[^.]+$/, ''));
+  const input = e.target, f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  if (!/^audio\//.test(f.type)){ ui.track.textContent = '♪ Escolha um arquivo de áudio (MP3, OGG, WAV ou M4A).'; return; }
+  if (trackUrl) URL.revokeObjectURL(trackUrl);
+  trackUrl = URL.createObjectURL(f);
+  Sound.useTrack(trackUrl, f.name.replace(/\.[^.]+$/, '').slice(0, 60));
   Sound.start();
 });
 // o som começa na primeira interação (exigência dos navegadores)
