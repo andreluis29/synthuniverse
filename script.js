@@ -95,9 +95,9 @@ const Sound = (() => {
   function playStep(s, t){
     if ((s & 15) === 0 && pendingVar){ CH = PROGS[pendingVar[0]].ch; RT = PROGS[pendingVar[0]].rt; tr = pendingVar[1]; pendingVar = null; }
     const bar = (s >> 4) & 3, b = s & 15, ch = CH[bar].map(n => n + tr);
-    if (b === 0){ pad(t, ch, S16 * 16); events.push({ t, type: 'bar', bar, chord: ch }); }
-    if (b % 2 === 0){ const n = ch[ARP[b >> 1]] + 12 + (b === 14 ? 12 : 0); arp(t, n, level ? 0.05 : 0.04); events.push({ t, type: 'note', n }); }
-    if (level >= 2 && (b === 0 || b === 6 || b === 10)){ const n = b === 0 ? ch[2] + 12 : b === 6 ? ch[1] + 12 : ch[0] + 24; lead(t, n); events.push({ t, type: 'note', n }); }
+    if (b === 0){ pad(t, ch, S16 * 16); events.push({ t, type: 'bar', bar }); }
+    if (b % 2 === 0) arp(t, ch[ARP[b >> 1]] + 12 + (b === 14 ? 12 : 0), level ? 0.05 : 0.04);
+    if (level >= 2 && (b === 0 || b === 6 || b === 10)) lead(t, b === 0 ? ch[2] + 12 : b === 6 ? ch[1] + 12 : ch[0] + 24);
     if (level > 0){
       if (b % 4 === 0){ kick(t); events.push({ t, type: 'kick' }); }
       if (b === 4 || b === 12){ snare(t); events.push({ t, type: 'snare' }); }
@@ -173,9 +173,7 @@ const Sound = (() => {
     const g2 = ctx.createGain(); g2.gain.setValueAtTime(0.0001, t + 1.3); g2.gain.exponentialRampToValueAtTime(0.6, t + 1.35); g2.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
     o.connect(g2); g2.connect(master); o.start(t + 1.3); o.stop(t + 2.9);
   }
-  let wbuf = null;
   function spectrum(){ if (!ctx || !running || muted) return null; analyser.getByteFrequencyData(freq); return freq; }
-  function wave(){ if (!ctx || !running || muted) return null; if (!wbuf) wbuf = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(wbuf); return wbuf; }
   function energy(){
     if (!ctx || !running) return 0;
     analyser.getByteFrequencyData(freq);
@@ -199,8 +197,8 @@ const Sound = (() => {
   });
   return {
     start, useTrack, setLevel, setMuted, setVariation, whoosh, energy, poll, progCount: PROGS.length,
-    spectrum, wave,
-    get running(){ return running; }, get muted(){ return muted; }, get synth(){ return running && !custom && !muted; },
+    spectrum,
+    get running(){ return running; }, get muted(){ return muted; },
     label(){ return custom ? '♪ ' + customLabel : level >= 2 ? '♪ Trilha sintetizada · 96 BPM · a harmonia muda a cada região' : '♪ Trilha sintetizada · 96 BPM · Lá menor'; },
     onChange(fn){ onChange = fn; }
   };
@@ -288,8 +286,8 @@ function hsl(h, s, l){
   const f = t => { t = (t + 1) % 1; return t < 1/6 ? p + (q - p) * 6 * t : t < 1/2 ? q : t < 2/3 ? p + (q - p) * (2/3 - t) * 6 : p; };
   return [f(h + 1/3) * 255, f(h) * 255, f(h - 1/3) * 255];
 }
-function genPalette(name){
-  const h = Math.random() < 0.8 ? 175 + Math.random() * 170 : Math.random() * 30, d = Math.random() < 0.5 ? 1 : -1; // faixa synthwave: ciano → roxo → magenta → laranja
+function genPalette(name, lo, hi){
+  const h = lo !== undefined ? lo + Math.random() * (hi - lo) : Math.random() < 0.8 ? 175 + Math.random() * 170 : Math.random() * 30, d = Math.random() < 0.5 ? 1 : -1; // faixa synthwave: ciano → roxo → magenta → laranja
   return { name, c: {
     sky0: hsl(h, .6, .04), sky1: hsl(h, .6, .13), sky2: hsl(h + 20*d, .7, .3), sky3: hsl(h + 40*d, 1, .6),
     sun0: hsl(h + 60*d, 1, .82), sun1: hsl(h + 30*d, 1, .63), sun2: hsl(h, .95, .58),
@@ -429,11 +427,6 @@ function spawnObj(z, type){
     o.rocks = Array.from({ length: 6 + ((Math.random()*7) | 0) }, () => ({ dx: (Math.random() - 0.5)*1.6, dy: (Math.random() - 0.5), r: 0.06 + Math.random()*0.14, a: Math.random()*6.28, sp: (Math.random() - 0.5)*1.4, pts: Array.from({ length: 7 }, () => 0.7 + Math.random()*0.45) }));
   } else if (type === 'crystal'){
     o.size = 0.1 + Math.random()*0.1; o.x = side()*(0.25 + Math.random()*0.8); o.y = (Math.random()*2 - 1)*0.6; o.spin = 0.6 + Math.random()*0.8;
-  } else if (type === 'note'){
-    o.size = 0.09 + Math.random()*0.07; o.x = side()*(0.2 + Math.random()*0.9); o.y = (Math.random()*2 - 1)*0.6;
-    o.g = pick(NOTE_GLYPHS); o.k = pick(['sun1', 'edge', 'sky3', 'sun0']);
-  } else if (type === 'disc'){
-    o.size = 0.12 + Math.random()*0.08; o.x = side()*(0.3 + Math.random()*0.8); o.y = (Math.random()*2 - 1)*0.6; o.spin = 3.5;
   } else if (type === 'star'){
     o.size = 0.45 + Math.random()*0.35; o.x = side()*(0.7 + Math.random()*0.8); o.y = (Math.random()*2 - 1)*0.5;
   } else {
@@ -443,20 +436,6 @@ function spawnObj(z, type){
   objs.push(o);
 }
 const DRAW = {
-  note(o, x, y, s){
-    g.font = `${Math.max(8, Math.round(s*2.2))}px ${SYMBOL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = C(o.k, 0.3); g.fillText(o.g, x + s*0.06, y + s*0.06);
-    g.fillStyle = C(o.k, 0.95); g.fillText(o.g, x, y);
-    g.textAlign = 'start'; g.textBaseline = 'alphabetic';
-  },
-  disc(o, x, y, s){
-    g.beginPath(); g.arc(x, y, s, 0, Math.PI*2); g.fillStyle = C('sky0'); g.fill(); g.strokeStyle = C('edge', 0.8); g.lineWidth = Math.max(1, s*0.03); g.stroke();
-    g.beginPath(); for (const q of [0.5, 0.65, 0.8, 0.92]){ g.moveTo(x + s*q, y); g.arc(x, y, s*q, 0, Math.PI*2); }
-    g.strokeStyle = C('grid', 0.3); g.lineWidth = 1; g.stroke();
-    g.beginPath(); g.moveTo(x, y); g.arc(x, y, s*0.95, o.rot, o.rot + 0.5); g.closePath(); g.fillStyle = C('star', 0.1); g.fill();
-    g.beginPath(); g.arc(x, y, s*0.33, 0, Math.PI*2); g.fillStyle = C('sun1'); g.fill();
-    g.beginPath(); g.arc(x, y, s*0.04, 0, Math.PI*2); g.fillStyle = C('sky0'); g.fill();
-  },
   asteroid(o, x, y, s){
     for (const r of o.rocks){
       const rx = x + r.dx*s, ry = y + r.dy*s, rr = r.r*s, a0 = r.a + T*r.sp*0.3;
@@ -539,24 +518,20 @@ const DRAW = {
     g.globalCompositeOperation = 'source-over';
   }
 };
-/* ---- dez cenas musicais: tocam em sequência e recomeçam com novas cores e tom ---- */
+/* ---- dez cenas visuais synthwave: passam em sequência no ritmo da música e recomeçam com novas cores e tom ---- */
 const SCENES = [
-  { name: 'Vinil Cósmico',        feature: 'vinyl',    weights: { disc: 1, note: .4, planet: .3, ring: .2 },     prog: 0, tr: 0 },
-  { name: 'Equalizador Estelar',  feature: 'eq',       weights: { planet: .6, crystal: .5, ring: .3, note: .3 }, prog: 1, tr: 0 },
-  { name: 'Osciloscópio Sideral', feature: 'scope',    weights: { galaxy: .6, nebula: .5, ring: .3 },            prog: 2, tr: 2 },
-  { name: 'Teclado Infinito',     feature: 'keys',     weights: { note: .8, crystal: .4, ring: .3 },             prog: 0, tr: -2 },
-  { name: 'Cassete Nebular',      feature: 'cassette', weights: { nebula: .6, disc: .4, star: .4, ring: .2 },    prog: 3, tr: 0 },
-  { name: 'Paredão de Caixas',    feature: 'speakers', weights: { asteroid: .6, planet: .5, ring: .3 },          prog: 1, tr: 3 },
-  { name: 'Chuva de Notas',       feature: 'staff',    weights: { note: 1.2, galaxy: .3, ring: .2 },             prog: 2, tr: 0 },
-  { name: 'Metrônomo Pulsar',     feature: 'metro',    weights: { crystal: .6, star: .3, ring: .4 },             prog: 0, tr: 5 },
-  { name: 'Sintonia FM',          feature: 'radio',    weights: { planet: .6, nebula: .4, ring: .3 },            prog: 3, tr: -3 },
-  { name: 'Mesa de Som',          feature: 'mixer',    weights: { disc: .5, note: .5, galaxy: .3, ring: .3 },    prog: 1, tr: 0 }
+  { name: 'Rodovia Neon',           feature: 'highway',       land: true,  objects: false, hue: [300, 345], prog: 0, tr: 0 },
+  { name: 'Metrópole Neon',         feature: 'city',          land: true,  objects: false, hue: [245, 300], prog: 1, tr: 0 },
+  { name: 'Praia das Palmeiras',    feature: 'beach',         land: true,  objects: false, hue: [330, 380], prog: 3, tr: 2 },
+  { name: 'Oceano Digital',         feature: 'ocean',         land: true,  objects: false, hue: [175, 225], prog: 2, tr: 0 },
+  { name: 'Voo sobre as Montanhas', feature: 'peaks',         land: true,  objects: false, hue: [260, 320], prog: 0, tr: -2 },
+  { name: 'Túnel Hiperespaço',      feature: 'tunnel',        land: false, objects: true,  hue: [180, 330], prog: 1, tr: 3, weights: { ring: .5, crystal: .5, asteroid: .4 } },
+  { name: 'Planeta Gigante',        feature: 'planet',        land: true,  objects: false, hue: [190, 280], prog: 3, tr: 0 },
+  { name: 'Deserto das Pirâmides',  feature: 'desert',        land: true,  objects: false, hue: [335, 395], prog: 2, tr: 5 },
+  { name: 'Aurora Glacial',         feature: 'aurora',        land: true,  objects: false, hue: [165, 230], prog: 3, tr: -3 },
+  { name: 'Constelação do Retrato', feature: 'constellation', land: false, objects: true,  hue: [270, 330], prog: 0, tr: 0, weights: { galaxy: .5, nebula: .6, star: .2 } }
 ];
-let zone = null, prevZone = null, zoneT = 0, zoneN = 0;
-let lastKick = -10, beatSide = 1, chordNow = [57, 60, 64], noteClock = 0;
-const keyFlash = new Map(), staffNotes = [];
-const NOTE_GLYPHS = ['♪', '♫', '♩', '♬'];
-const SYMBOL_FONT = "'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',serif";
+let zone = null, prevZone = null, zoneT = 0, zoneN = 0, travel = 0, lastKick = -10;
 const pick = a => a[(Math.random() * a.length) | 0];
 function pickWeighted(w){ let sum = 0; for (const k in w) sum += w[k]; let r = Math.random() * sum; for (const k in w){ r -= w[k]; if (r <= 0) return k; } return 'planet'; }
 
@@ -565,247 +540,355 @@ function newZone(){
   const idx = zoneN % SCENES.length, loop = Math.floor(zoneN / SCENES.length) + 1;
   zoneN++;
   const s = SCENES[idx];
-  zone = { ...s, idx, loop, rate: 0.9 + Math.random()*0.8, speed: 0.8 + Math.random()*0.5, dur: 18 + Math.random()*6, fade: 0, seed: Math.random()*10 };
+  zone = { ...s, idx, loop, rate: 0.9 + Math.random()*0.8, speed: 0.85 + Math.random()*0.4, dur: 18 + Math.random()*6, fade: 0, seed: Math.random()*1000, sides: 4 + ((Math.random()*4) | 0) };
   zoneT = 0;
-  staffNotes.length = 0;
-  setPal(genPalette(s.name), 0.22);
+  setPal(genPalette(s.name, s.hue[0], s.hue[1]), 0.22);
   Sound.setVariation(s.prog, s.tr + [0, 2, -2][(loop - 1) % 3]);
-  flash = 1; warp = Math.max(warp, 0.55);
+  flash = 1; warp = Math.max(warp, s.land ? 0.25 : 0.55);
   updateHud();
 }
 
-/* dados de áudio: espectro e forma de onda reais, ou simulados com o som desligado */
-let SPEC = new Uint8Array(256), WAVE = new Uint8Array(512);
-const fakeSpec = new Uint8Array(256), fakeWave = new Uint8Array(512);
+/* graves da música (reais ou simulados) para dar pulso aos cenários */
+let SPEC = new Uint8Array(256);
+const fakeSpec = new Uint8Array(256);
 function readAudio(){
   const s = Sound.spectrum();
-  if (s) SPEC = s;
-  else { for (let i = 0; i < 256; i++) fakeSpec[i] = Math.max(0, 255 * (0.35 + 0.5*pulse) * Math.exp(-i/60) * (0.6 + 0.4*Math.sin(T*3 + i*0.7))); SPEC = fakeSpec; }
-  const w = Sound.wave();
-  if (w) WAVE = w;
-  else { for (let i = 0; i < 512; i++) fakeWave[i] = 128 + (Math.sin(i*0.05 + T*8)*0.6 + Math.sin(i*0.13 + T*3)*0.3) * (25 + pulse*55); WAVE = fakeWave; }
+  if (s){ SPEC = s; return; }
+  for (let i = 0; i < 256; i++) fakeSpec[i] = Math.max(0, 255 * (0.35 + 0.5*pulse) * Math.exp(-i/60) * (0.6 + 0.4*Math.sin(T*3 + i*0.7)));
+  SPEC = fakeSpec;
 }
-function band(i, n){
-  const lo = Math.floor(Math.pow(i/n, 1.6) * 110) + 1, hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1)/n, 1.6) * 110) + 1);
-  let s = 0; for (let k = lo; k < hi; k++) s += SPEC[k];
-  return s / (hi - lo) / 255;
-}
+function bassLevel(){ let s = 0; for (let k = 1; k < 7; k++) s += SPEC[k]; return s / (6 * 255); }
+function onKick(){ pulse = 1; lastKick = T; }
+
+/* ---- peças de desenho reutilizadas pelas cenas ---- */
+const rnd = s => { const x = Math.sin(s * 12.9898) * 43758.5453; return x - Math.floor(x); };
 function neon(k, alpha, lw){ g.strokeStyle = C(k, alpha * 0.2); g.lineWidth = lw * 4; g.stroke(); g.strokeStyle = C(k, alpha); g.lineWidth = lw; g.stroke(); }
-function onKick(){ pulse = 1; lastKick = T; beatSide = -beatSide; }
-function addStaffNote(n){
-  const DI = [0,0,1,1,2,3,3,4,4,5,5,6], diat = m => Math.floor(m / 12) * 7 + DI[((m % 12) + 12) % 12];
-  let step = diat(n) - diat(71); // 71 = Si4, linha do meio da pauta em clave de sol
-  while (step > 6) step -= 7; while (step < -6) step += 7;
-  staffNotes.push({ x: W + 30, step, g: pick(NOTE_GLYPHS), k: pick(['sun1', 'edge', 'sky3', 'sun0']) });
+function skyGrad(HY){
+  const gr = g.createLinearGradient(0, 0, 0, HY);
+  gr.addColorStop(0, C('sky0')); gr.addColorStop(0.5, C('sky1')); gr.addColorStop(0.85, C('sky2')); gr.addColorStop(1, C('sky3'));
+  g.fillStyle = gr; g.fillRect(0, 0, W, HY + 1);
+}
+function skyStars(z, ymax, n = 160){
+  if (!z.sk) z.sk = Array.from({ length: 240 }, () => [Math.random(), Math.random(), Math.random()*6.28, 0.6 + Math.random()*1.4]);
+  const ga = g.globalAlpha; g.fillStyle = C('star');
+  for (let i = 0; i < n; i++){ const [x, y, p, r] = z.sk[i]; g.globalAlpha = ga * (0.35 + 0.65*Math.abs(Math.sin(T*1.2 + p))) * (1 - y*0.75); g.fillRect(x*W, y*ymax, r, r); }
+  g.globalAlpha = ga;
+}
+function sunAt(x, y, R){
+  const glow = g.createRadialGradient(x, y, R*0.6, x, y, R*2.3);
+  glow.addColorStop(0, C('sun2', 0.4 + pulse*0.15)); glow.addColorStop(1, C('sun2', 0));
+  g.fillStyle = glow; g.fillRect(x - R*2.4, y - R*2.4, R*4.8, R*4.8);
+  const size = Math.ceil(R*2 + 4);
+  if (sunCv.width !== size){ sunCv.width = size; sunCv.height = size; }
+  sg.globalCompositeOperation = 'source-over'; sg.clearRect(0, 0, size, size);
+  const lg = sg.createLinearGradient(0, 0, 0, size);
+  lg.addColorStop(0, C('sun0')); lg.addColorStop(0.5, C('sun1')); lg.addColorStop(1, C('sun2'));
+  sg.fillStyle = lg; sg.beginPath(); sg.arc(size/2, size/2, R, 0, Math.PI*2); sg.fill();
+  sg.globalCompositeOperation = 'destination-out';
+  const roll = REDUCED ? 0 : (T*0.35) % 1;
+  for (let i = 0; i < 9; i++){ const f = (i + roll)/9; sg.fillRect(0, size*0.3 + f*size*0.5, size, 1 + f*R*0.1); }
+  g.drawImage(sunCv, x - size/2, y - size/2);
+}
+function horizonLine(HY){
+  const hg = g.createLinearGradient(0, HY - 24, 0, HY + 24);
+  hg.addColorStop(0, C('sky3', 0)); hg.addColorStop(0.5, C('sky3', 0.5 + pulse*0.3)); hg.addColorStop(1, C('sky3', 0));
+  g.fillStyle = hg; g.fillRect(0, HY - 24, W, 48);
+  g.fillStyle = C('sun0', 0.9); g.fillRect(0, HY - 0.75, W, 1.5);
+}
+function floorGrid(HY, vpx, ph, b){
+  const gh = H - HY;
+  g.beginPath();
+  for (let n = 1; n < 40; n++){ const zz = n - ph, y = HY + gh*0.85/zz; if (y > H + 2) continue; g.moveTo(0, y); g.lineTo(W, y); }
+  for (let j = -26; j <= 26; j++){ g.moveTo(vpx + j*3, HY); g.lineTo(vpx + j*W*0.1, H); }
+  g.strokeStyle = C('grid', 0.16*b); g.lineWidth = 5; g.stroke();
+  g.strokeStyle = C('grid', 0.85*b); g.lineWidth = 1.2; g.stroke();
+}
+function palm(x, y, h, lean, sway){
+  const tx = x + lean*h*0.22, ty = y - h;
+  g.beginPath(); g.moveTo(x - h*0.03, y); g.quadraticCurveTo(x + lean*h*0.02, y - h*0.55, tx - h*0.012, ty);
+  g.lineTo(tx + h*0.012, ty); g.quadraticCurveTo(x + lean*h*0.02 + h*0.035, y - h*0.55, x + h*0.03, y); g.closePath(); g.fill();
+  for (let i = 0; i < 8; i++){
+    const a = -Math.PI/2 + (i - 3.5)*0.42 + sway, L = h*(0.36 + (i % 2)*0.08);
+    const ex = tx + Math.cos(a)*L, ey = ty + Math.sin(a)*L*0.4 + L*0.45*Math.abs(Math.cos(a));
+    const qx = tx + Math.cos(a)*L*0.55, qy = ty + Math.sin(a)*L*0.6 - L*0.1;
+    g.beginPath(); g.moveTo(tx, ty); g.quadraticCurveTo(qx, qy - L*0.08, ex, ey); g.quadraticCurveTo(qx, qy + L*0.08, tx, ty); g.fill();
+  }
+}
+// terreno em malha wireframe que avança até a câmera (oceano e montanhas)
+function terrain(HY, vpx, height, fillK, lineK){
+  const gh = H - HY, sc = W*0.175, ph = travel % 1, base = Math.floor(travel), a0 = 0.55 + pulse*0.45;
+  let prev = null;
+  for (let r = 28; r >= 1; r--){
+    const zz = r - ph; if (zz < 0.6) continue;
+    const wz = base + r, y0 = HY + gh*0.55/zz, step = zz < 5 ? 0.5 : zz < 12 ? 1 : 2, span = Math.ceil((3*zz + 2) / step) * step;
+    const pts = [], map = new Map();
+    for (let wx = -span; wx <= span; wx += step){ const p = [vpx + wx/zz*sc, y0 - height(wx, wz)*gh*0.5/zz]; pts.push(p); map.set(wx, p); }
+    g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y));
+    g.lineTo(pts[pts.length - 1][0], H + 10); g.lineTo(pts[0][0], H + 10); g.closePath();
+    g.fillStyle = C(fillK, 0.97); g.fill();
+    const al = Math.min(1, 7/zz) * a0;
+    g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y));
+    if (prev) for (const [wx, p] of map){ const q = prev.get(wx); if (q && wx % 2 === 0){ g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); } }
+    g.strokeStyle = C(lineK, al * 0.25); g.lineWidth = Math.max(2, 5/zz); g.stroke();
+    g.strokeStyle = C(lineK, al); g.lineWidth = Math.max(0.8, 2.2/zz); g.stroke();
+    prev = map;
+  }
+}
+function reflect(HY, draw){
+  g.save(); g.beginPath(); g.rect(0, HY, W, H - HY); g.clip();
+  g.translate(0, HY*2); g.scale(1, -1); g.globalAlpha *= 0.32; draw();
+  g.restore();
+  for (let y = HY; y < H; y += 5){ const k = (y - HY)/(H - HY); g.fillStyle = C('sky0', 0.2 + k*0.5); g.fillRect(0, y + Math.sin(y*0.3 + T*3)*1.5, W, 2); }
 }
 
+/* o retrato da cena 01 como constelação (coordenadas do SVG) */
+const PORTRAIT = (() => {
+  const head = ([x, y]) => [x, 168 + (y - 168)*0.85 + 14], hair = ([x, y]) => [x, y + 14], body = ([x, y]) => [214 + (x - 214)*0.88, y];
+  const L = (f, pts) => pts.map(f);
+  return [
+    L(head, [[216,98],[242,98],[262,112],[267,140],[270,170],[266,210],[255,250],[241,280],[220,294],[202,289],[193,280],[176,262],[165,236],[160,210],[158,175],[160,140],[170,115],[190,100],[216,98]]),
+    L(head, [[164,156],[180,144],[207,148]]), L(head, [[224,148],[248,143],[264,154]]),
+    L(head, [[171,171],[180,164],[190,162],[203,169],[194,176],[180,176],[171,171]]),
+    L(head, [[226,169],[238,162],[250,163],[258,170],[248,175],[234,175],[226,169]]),
+    L(head, [[218,180],[222,200],[226,216],[220,224],[214,220]]),
+    L(head, [[200,247],[210,241],[218,243],[226,241],[238,246],[228,254],[218,256],[208,254],[200,247]]),
+    L(hair, [[214,80],[176,78],[148,110],[146,164],[146,214],[152,258],[160,300],[152,380],[150,448]]),
+    L(hair, [[214,80],[252,78],[280,110],[282,164],[282,214],[276,258],[268,300],[276,380],[278,448]]),
+    L(body, [[194,268],[190,320],[174,356],[110,370],[62,392],[34,450],[26,520]]),
+    L(body, [[238,268],[242,320],[256,356],[318,370],[366,392],[394,450],[404,520]]),
+    L(body, [[116,392],[194,380]]), L(body, [[234,380],[312,392]]),
+    L(body, [[30,470],[100,444],[176,442],[214,468],[252,442],[328,444],[398,470]])
+  ];
+})();
+const PORTRAIT_SEGS = PORTRAIT.reduce((n, l) => n + l.length - 1, 0);
+
 const FEAT = {
-  // 1 · disco girando a 33⅓ rotações por minuto, com braço da agulha
-  vinyl(z, cx, cy, bass, M){
-    const R = M * 0.46, rot = T * Math.PI * 2 * (100/3) / 60;
-    g.beginPath(); g.arc(cx, cy, R, 0, Math.PI*2); g.fillStyle = C('sky0', 0.92); g.fill(); neon('edge', 0.8, 1.5);
-    g.beginPath(); for (let r = R*0.38; r < R*0.97; r += R*0.03){ g.moveTo(cx + r, cy); g.arc(cx, cy, r, 0, Math.PI*2); }
-    g.strokeStyle = C('grid', 0.1 + bass*0.35); g.lineWidth = 1; g.stroke();
-    for (const off of [0, Math.PI]){ g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R*0.97, rot + off, rot + off + 0.4); g.closePath(); g.fillStyle = C('star', 0.07); g.fill(); }
-    const lg = g.createRadialGradient(cx, cy, 0, cx, cy, R*0.33);
-    lg.addColorStop(0, C('sun0')); lg.addColorStop(0.6, C('sun1')); lg.addColorStop(1, C('sun2'));
-    g.beginPath(); g.arc(cx, cy, R*0.33, 0, Math.PI*2); g.fillStyle = lg; g.fill();
-    g.save(); g.translate(cx, cy); g.rotate(rot); g.fillStyle = C('sky0', 0.85); g.textAlign = 'center';
-    g.font = `700 ${Math.round(R*0.045)}px Syncopate, sans-serif`; g.fillText('SYNTHUNIVERSE', 0, -R*0.15);
-    g.font = `600 ${Math.round(R*0.045)}px 'Chakra Petch', sans-serif`; g.fillText('LADO A · 33⅓ RPM', 0, R*0.2);
-    g.restore();
-    g.beginPath(); g.arc(cx, cy, R*0.025, 0, Math.PI*2); g.fillStyle = C('sky0'); g.fill();
-    const bx = cx + R*1.12, by = cy - R*0.9;
-    g.beginPath(); g.moveTo(bx, by); g.lineTo(cx + R*0.62, cy - R*0.12); g.lineTo(cx + R*0.55, cy - R*0.02); neon('edge', 0.9, Math.max(2, R*0.012));
-    g.beginPath(); g.arc(bx, by, R*0.06, 0, Math.PI*2); g.fillStyle = C('mount'); g.fill(); neon('edge', 0.8, 1.5);
-  },
-  // 2 · equalizador de LEDs com o espectro real, espelhado no topo e com picos
-  eq(z, cx, cy, bass, M){
-    const n = W < 600 ? 24 : 40, bw = W / n, seg = Math.max(6, H*0.012), gap = 3, top = H*0.42;
-    if (!z.peaks || z.peaks.length !== n) z.peaks = new Float32Array(n);
-    for (let i = 0; i < n; i++){
-      const h = Math.min(1, band(i, n) * 1.25) * top, x = i*bw + 2, w = bw - 4;
-      z.peaks[i] = Math.max(z.peaks[i] * 0.985, h);
-      for (let yy = 0; yy < h; yy += seg + gap){
-        const k = yy / top < 0.5 ? 'grid' : yy / top < 0.8 ? 'sun1' : 'sun2';
-        g.fillStyle = C(k, 0.85); g.fillRect(x, H - yy - seg, w, seg);
-        g.fillStyle = C(k, 0.22); g.fillRect(x, yy, w, seg);
-      }
-      g.fillStyle = C('star', 0.9); g.fillRect(x, H - z.peaks[i] - seg - 4, w, 3);
+  // 1 · estrada outrun rumo ao sol, com palmeiras passando dos dois lados
+  highway(z, cx, cy, bass, M){
+    const HY = H*0.56, gh = H - HY, hw = y => (y - HY)/gh * W*0.42 + 1;
+    skyGrad(HY); skyStars(z, HY*0.8);
+    sunAt(cx, HY - M*0.06, M*0.2*(1 + pulse*0.03));
+    if (!z.mt) z.mt = makeRidge(30, 1);
+    ridge(z.mt, 0, HY, 0.16, 1, 0.7);
+    g.fillStyle = C('ground'); g.fillRect(0, HY, W, gh);
+    floorGrid(HY, cx, (travel*2) % 1, 0.5 + pulse*0.4);
+    g.beginPath(); g.moveTo(cx - 1, HY); g.lineTo(cx + 1, HY); g.lineTo(cx + hw(H), H); g.lineTo(cx - hw(H), H); g.closePath();
+    g.fillStyle = C('sky0', 0.96); g.fill();
+    g.beginPath(); g.moveTo(cx - 1, HY); g.lineTo(cx - hw(H), H); g.moveTo(cx + 1, HY); g.lineTo(cx + hw(H), H); neon('sun1', 0.9, 2);
+    const ph = (travel*2) % 1;
+    g.fillStyle = C('sun0', 0.9);
+    for (let k = 1; k < 30; k++){
+      const z0 = k - ph, z1 = z0 - 0.45; if (z1 < 0.4) continue;
+      const y0 = HY + gh*0.85/z0, y1 = Math.min(H, HY + gh*0.85/z1), w0 = hw(y0)*0.025, w1 = hw(y1)*0.025;
+      g.beginPath(); g.moveTo(cx - w0, y0); g.lineTo(cx + w0, y0); g.lineTo(cx + w1, y1); g.lineTo(cx - w1, y1); g.fill();
+    }
+    horizonLine(HY);
+    g.fillStyle = C('sky0');
+    const pph = (travel*2) % 1.5;
+    for (let k = 9; k >= 1; k--){
+      const zz = k*1.5 - pph; if (zz < 0.5) continue;
+      const y = HY + gh*0.85/zz, h = (y - HY) * 1.9, sway = Math.sin(T*1.2 + k)*0.06 + pulse*0.04;
+      for (const side of [-1, 1]) palm(cx + side*hw(y)*1.35, y, h, side*0.35, sway*side);
     }
   },
-  // 3 · osciloscópio com a forma de onda real sobre a retícula
-  scope(z, cx, cy, bass, M){
+  // 2 · skyline com janelas acesas, antenas piscando no bumbo e reflexo na água
+  city(z, cx, cy, bass, M){
+    const HY = H*0.66;
+    skyGrad(HY); skyStars(z, HY*0.7);
+    if (!z.bl) z.bl = [0, 1, 2].map(L => { const arr = []; let x = 0; while (x < 1.6){ const w = 0.02 + Math.random()*0.05; arr.push({ x, w, h: (0.08 + Math.random()*Math.random()*0.42)*(1 - L*0.2) + (L === 0 ? 0.08 : 0), s: Math.random()*1000, ant: Math.random() < 0.25 }); x += w + Math.random()*0.012; } return arr; });
+    const scene = () => {
+      sunAt(cx, HY - M*0.12, M*0.24*(1 + pulse*0.03));
+      z.bl.forEach((arr, L) => {
+        const shift = (travel*0.02*(L + 1)) % 1.6, da = [0.55, 0.8, 1][L];
+        for (const b of arr){
+          const x = (((b.x - shift + 1.6) % 1.6) - 0.3) * W, w = b.w*W, h = b.h*H;
+          if (x > W || x + w < 0) continue;
+          g.fillStyle = C('mount'); g.fillRect(x, HY - h, w, h);
+          if (L < 2){ g.fillStyle = C('sky2', 0.28 * (2 - L)); g.fillRect(x, HY - h, w, h); }
+          g.fillStyle = C('edge', 0.55*da); g.fillRect(x, HY - h, w, 1.5);
+          if (L > 0){
+            const cols = Math.max(1, Math.floor(w/8)), rows = Math.floor(h/10), cw = (w - 4)/cols;
+            g.fillStyle = C(L === 2 ? 'sun1' : 'edge', 0.75);
+            for (let r = 1; r < rows; r++) for (let c = 0; c < cols; c++){
+              if (rnd(b.s + r*31 + c*7 + Math.floor(T*0.3 + rnd(b.s + r*3)*4)) > 0.7) g.fillRect(x + 2 + c*cw, HY - h + r*10, Math.max(2, cw - 3), 4);
+            }
+          }
+          if (b.ant && L === 2){
+            g.fillStyle = C('edge', 0.6); g.fillRect(x + w/2 - 0.5, HY - h*1.15, 1, h*0.15);
+            g.fillStyle = C('sun2', 0.35 + pulse*0.65); g.fillRect(x + w/2 - 2, HY - h*1.15 - 3, 4, 4);
+          }
+        }
+      });
+    };
+    scene();
+    g.fillStyle = C('sky0'); g.fillRect(0, HY, W, H - HY);
+    reflect(HY, scene);
+    horizonLine(HY);
+  },
+  // 3 · pôr do sol no mar, com o reflexo tremulando e palmeiras balançando no ritmo
+  beach(z, cx, cy, bass, M){
+    const HY = H*0.58, R = M*0.26*(1 + pulse*0.03);
+    skyGrad(HY); skyStars(z, HY*0.6, 90);
+    sunAt(cx, HY - R*0.25, R);
+    const og = g.createLinearGradient(0, HY, 0, H); og.addColorStop(0, C('sky2')); og.addColorStop(1, C('sky0'));
+    g.fillStyle = og; g.fillRect(0, HY, W, H - HY);
+    for (let i = 0; i < 26; i++){
+      const f = i/26, y = HY + 3 + Math.pow(f, 1.4)*(H*0.9 - HY), w = R*(1.25 - f*0.6)*(0.75 + 0.25*Math.sin(T*2.6 + i*1.7));
+      g.fillStyle = C(i % 3 ? 'sun1' : 'sun0', (1 - f)*0.75); g.fillRect(cx - w + Math.sin(T*1.3 + i)*R*0.06, y, w*2, 2 + f*5);
+    }
+    for (let i = 0; i < 6; i++){
+      const f = (T*0.08 + i/6) % 1, y = HY + Math.pow(f, 1.6)*(H - HY);
+      g.beginPath(); for (let x = 0; x <= W; x += 20){ const yy = y + Math.sin(x*0.02 + i + T)*12*f; x ? g.lineTo(x, yy) : g.moveTo(x, yy); }
+      g.strokeStyle = C('edge', 0.4*f); g.lineWidth = 1.2; g.stroke();
+    }
+    horizonLine(HY);
+    g.beginPath(); g.moveTo(0, H); g.lineTo(0, H*0.9); g.quadraticCurveTo(W*0.3, H*0.84, W*0.55, H*0.93); g.quadraticCurveTo(W*0.8, H, W, H*0.9); g.lineTo(W, H); g.closePath();
+    g.fillStyle = C('mount'); g.fill(); neon('edge', 0.4, 1);
+    const sw = Math.sin(T*0.9)*0.05 + pulse*0.03;
+    g.fillStyle = C('sky0');
+    palm(W*0.1, H*0.95, H*0.78, 0.55, sw); palm(W*0.21, H*0.97, H*0.5, 0.3, sw*0.8); palm(W*0.88, H*0.96, H*0.66, -0.5, -sw);
+  },
+  // 4 · mar em wireframe ondulando, que cresce com o grave
+  ocean(z, cx, cy, bass, M){
+    const HY = H*0.5;
+    skyGrad(HY); skyStars(z, HY*0.85);
+    sunAt(cx, HY - M*0.1, M*0.2*(1 + pulse*0.03));
+    g.fillStyle = C('ground'); g.fillRect(0, HY, W, H - HY);
+    terrain(HY, cx, (wx, wz) => (Math.sin(wx*0.9 + T*1.6 + wz*0.7)*0.16 + Math.sin(wx*0.35 - T*1.1 + wz*1.3)*0.12) * (1 + bass*0.9) + 0.05, 'ground', 'grid');
+    horizonLine(HY);
+  },
+  // 5 · voo rasante por um cânion de montanhas em wireframe
+  peaks(z, cx, cy, bass, M){
+    const HY = H*0.46;
+    skyGrad(HY); skyStars(z, HY*0.85);
+    sunAt(cx, HY - M*0.08, M*0.22*(1 + pulse*0.03));
+    g.fillStyle = C('ground'); g.fillRect(0, HY, W, H - HY);
+    terrain(HY, cx, (wx, wz) => {
+      const c = Math.min(1, Math.abs(wx)/2.5);
+      const v = Math.abs(Math.sin(wx*0.55 + wz*0.8)) * Math.abs(Math.cos(wz*0.37 + wx*0.21)) + 0.5*Math.abs(Math.sin(wx*1.3 - wz*0.6))*Math.abs(Math.sin(wz*0.9));
+      return v * 1.4 * c * c;
+    }, 'mount', 'edge');
+    horizonLine(HY);
+  },
+  // 6 · túnel poligonal em velocidade de dobra
+  tunnel(z, cx, cy, bass, M){
+    const sc = Math.max(W, H)*0.5, n = z.sides, rot = T*0.15, ph = travel % 1;
     g.beginPath();
-    for (let i = 0; i <= 10; i++){ const x = W*i/10; g.moveTo(x, 0); g.lineTo(x, H); }
-    for (let i = 0; i <= 8; i++){ const y = H*i/8; g.moveTo(0, y); g.lineTo(W, y); }
-    g.strokeStyle = C('grid', 0.09); g.lineWidth = 1; g.stroke();
-    const n = WAVE.length;
-    for (const [k, off, al, inv] of [['sky3', -H*0.16, 0.35, -0.6], ['edge', 0, 1, 1], ['sun1', H*0.16, 0.35, -0.6]]){
-      g.beginPath();
-      for (let i = 0; i < n; i += 2){ const x = i / (n - 1) * W, y = cy + off + (WAVE[i] - 128) * H * 0.003 * inv; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-      neon(k, al, 2);
+    for (let k = 1; k < 16; k++){
+      const zz = k - ph, r = sc*0.9/zz; if (r < 6) continue;
+      for (let i = 0; i <= n; i++){ const an = rot + i/n*Math.PI*2, px = cx + Math.cos(an)*r, py = cy + Math.sin(an)*r; i ? g.lineTo(px, py) : g.moveTo(px, py); }
     }
+    for (let i = 0; i < n; i++){ const an = rot + i/n*Math.PI*2; g.moveTo(cx + Math.cos(an)*6, cy + Math.sin(an)*6); g.lineTo(cx + Math.cos(an)*sc*4, cy + Math.sin(an)*sc*4); }
+    neon('grid', 0.5 + pulse*0.4, 1.1);
+    if (!z.st) z.st = Array.from({ length: 70 }, () => [Math.random()*6.28, Math.random()]);
+    g.beginPath();
+    for (const [a, o] of z.st){ const f = (o + travel*0.5) % 1, r0 = f*f*sc*1.3, r1 = r0*1.18 + 4; g.moveTo(cx + Math.cos(a)*r0, cy + Math.sin(a)*r0); g.lineTo(cx + Math.cos(a)*r1, cy + Math.sin(a)*r1); }
+    g.strokeStyle = C('star', 0.6); g.lineWidth = 1.2; g.stroke();
   },
-  // 4 · teclado de sintetizador em perspectiva; acende as notas do acorde e do arpejo
-  keys(z, cx, cy, bass, M){
-    const HY = H*0.6, N = 22, kw = W*1.9/N, sh = 0.08;
-    const px = (x, t) => cx + (x - cx) * (sh + (1 - sh) * t), py = t => HY + (H - HY) * t;
-    const held = new Set(chordNow.map(n => ((n % 12) + 12) % 12));
-    const flashOf = m => Math.max(keyFlash.get(m) || 0, keyFlash.get(m + 12) || 0, keyFlash.get(m - 12) || 0);
-    const quad = (x0, x1, t1) => { g.beginPath(); g.moveTo(px(x0, 0), py(0)); g.lineTo(px(x1, 0), py(0)); g.lineTo(px(x1, t1), py(t1)); g.lineTo(px(x0, t1), py(t1)); g.closePath(); };
-    const WPC = [0, 2, 4, 5, 7, 9, 11];
-    for (let i = 0; i < N; i++){
-      const x0 = cx + (i - N/2) * kw, pc = WPC[i % 7], m = 48 + Math.floor(i / 7) * 12 + pc;
-      const lit = Math.max(held.has(pc) ? 0.35 : 0, flashOf(m));
-      quad(x0, x0 + kw, 1);
-      g.fillStyle = lit ? C('sun1', 0.25 + lit*0.6) : C('star', 0.1); g.fill();
-      g.strokeStyle = C('grid', 0.7); g.lineWidth = 1; g.stroke();
+  // 7 · planeta anelado nascendo atrás de uma lua, com duas luas em órbita
+  planet(z, cx, cy, bass, M){
+    skyStars(z, H, 220);
+    const rise = Math.min(1, zoneT/8), R = M*0.42, px = cx + M*0.12, py = H*0.7 - R*0.45 - rise*M*0.1;
+    for (let i = 0; i < 2; i++){
+      const a = T*(0.25 + i*0.17) + i*2, mx2 = px + Math.cos(a)*R*(1.75 + i*0.45), my2 = py + Math.sin(a)*R*0.3, mr = R*(0.07 - i*0.02);
+      if (Math.sin(a) < 0){ g.beginPath(); g.arc(mx2, my2, mr, 0, Math.PI*2); g.fillStyle = C('star', 0.9); g.fill(); }
     }
-    const BPC = { 0: 1, 1: 3, 3: 6, 4: 8, 5: 10 };
-    for (let i = 0; i < N - 1; i++){
-      const b = BPC[i % 7]; if (b === undefined) continue;
-      const xm = cx + (i + 1 - N/2) * kw, m = 48 + Math.floor(i / 7) * 12 + b;
-      const lit = Math.max(held.has(b) ? 0.35 : 0, flashOf(m));
-      quad(xm - kw*0.3, xm + kw*0.3, 0.6);
-      g.fillStyle = lit ? C('edge', 0.4 + lit*0.5) : C('sky0', 0.95); g.fill();
-      g.strokeStyle = C('grid', 0.7); g.lineWidth = 1; g.stroke();
+    DRAW.planet({ v: 0, ring: true, rot: 0.4 }, px, py, R);
+    for (let i = 0; i < 2; i++){
+      const a = T*(0.25 + i*0.17) + i*2, mx2 = px + Math.cos(a)*R*(1.75 + i*0.45), my2 = py + Math.sin(a)*R*0.3, mr = R*(0.07 - i*0.02);
+      if (Math.sin(a) >= 0){ g.beginPath(); g.arc(mx2, my2, mr, 0, Math.PI*2); g.fillStyle = C('star', 0.95); g.fill(); }
     }
-  },
-  // 5 · fita cassete C-60 gigante; a fita passa de um rolo para o outro durante a cena
-  cassette(z, cx, cy, bass, M){
-    const w = Math.min(W*0.8, M*1.25), h = w / 1.574, x = cx - w/2, y = cy - h/2;
-    const rr = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
-    rr(x, y, w, h, w*0.03); g.fillStyle = C('sky0', 0.85); g.fill(); neon('edge', 0.85, 2);
-    const lx = x + w*0.06, ly = y + h*0.08, lw = w*0.88, lh = h*0.6;
-    g.fillStyle = C('star', 0.07); g.fillRect(lx, ly, lw, lh);
-    ['sun0', 'sun1', 'sun2', 'sky3'].forEach((k, i) => { g.fillStyle = C(k, 0.75); g.fillRect(lx, ly + lh*0.13 + i*lh*0.055, lw, lh*0.035); });
-    g.fillStyle = C('star', 0.92); g.font = `700 ${Math.round(w*0.026)}px Syncopate, sans-serif`;
-    g.fillText('SYNTHUNIVERSE', lx + lw*0.03, ly + lh*0.1);
-    g.textAlign = 'right'; g.fillText('C-60 · LADO A', lx + lw*0.97, ly + lh*0.1); g.textAlign = 'start';
-    const wx = x + w*0.27, wy = y + h*0.37, ww = w*0.46, wh = h*0.22;
-    rr(wx, wy, ww, wh, wh*0.2); g.fillStyle = C('sky1', 0.95); g.fill(); neon('edge', 0.6, 1);
-    const prog = Math.min(1, zoneT / (z.dur || 20));
-    const reels = [[x + w*0.335, 1 - prog*0.7], [x + w*0.665, 0.3 + prog*0.7]], ry = wy + wh/2, hub = h*0.075;
-    g.save(); rr(wx, wy, ww, wh, wh*0.2); g.clip();
-    for (const [rx, amt] of reels){ g.beginPath(); g.arc(rx, ry, hub*(1.15 + amt*1.3), 0, Math.PI*2); g.fillStyle = C('mount', 0.95); g.fill(); g.strokeStyle = C('sun2', 0.4); g.lineWidth = 1; g.stroke(); }
+    const top = H*0.78, SR = M*3;
+    g.beginPath(); g.arc(cx, top + SR, SR, 0, Math.PI*2); g.fillStyle = C('ground'); g.fill(); neon('edge', 0.8, 1.5);
+    g.save(); g.beginPath(); g.arc(cx, top + SR, SR, 0, Math.PI*2); g.clip();
+    g.beginPath();
+    for (let k = 1; k < 9; k++){ const off = ((k + (travel % 1)) ** 1.7) * 5; g.moveTo(cx + SR, top + SR); g.arc(cx, top + SR, SR - off, 0, Math.PI*2); }
+    for (let j = -12; j <= 12; j++){ g.moveTo(cx + j*W*0.03, top); g.lineTo(cx + j*W*0.22, H); }
+    g.strokeStyle = C('grid', 0.35 + pulse*0.3); g.lineWidth = 1; g.stroke();
     g.restore();
-    reels.forEach(([rx], i) => {
-      const a0 = T * (i ? 2.4 : 1.6);
-      g.beginPath(); g.arc(rx, ry, hub, 0, Math.PI*2); g.fillStyle = C('sky0'); g.fill(); neon('star', 0.85, 1.5);
-      g.beginPath(); for (let k = 0; k < 6; k++){ const a = a0 + k * Math.PI/3; g.moveTo(rx + Math.cos(a)*hub*0.45, ry + Math.sin(a)*hub*0.45); g.lineTo(rx + Math.cos(a)*hub*0.95, ry + Math.sin(a)*hub*0.95); }
-      g.strokeStyle = C('star', 0.85); g.lineWidth = 2; g.stroke();
+  },
+  // 8 · pirâmides neon sob a lua, com dunas deslizando
+  desert(z, cx, cy, bass, M){
+    const HY = H*0.64;
+    skyGrad(HY); skyStars(z, HY, 200);
+    const mx2 = W*0.78, my2 = H*0.2, mr = M*0.08;
+    const mg = g.createRadialGradient(mx2, my2, mr*0.8, mx2, my2, mr*3); mg.addColorStop(0, C('sun0', 0.35)); mg.addColorStop(1, C('sun0', 0));
+    g.fillStyle = mg; g.fillRect(mx2 - mr*3, my2 - mr*3, mr*6, mr*6);
+    g.beginPath(); g.arc(mx2, my2, mr, 0, Math.PI*2); g.fillStyle = C('sun0'); g.fill();
+    g.fillStyle = C('sun1', 0.35); for (const [dx, dy, r] of [[-0.3, -0.2, 0.18], [0.25, 0.1, 0.12], [-0.05, 0.4, 0.1]]){ g.beginPath(); g.arc(mx2 + dx*mr, my2 + dy*mr, r*mr, 0, Math.PI*2); g.fill(); }
+    const pyr = (x, base, w, h) => {
+      g.beginPath(); g.moveTo(x - w/2, base); g.lineTo(x, base - h); g.lineTo(x + w*0.12, base); g.closePath(); g.fillStyle = C('sun1', 0.55); g.fill();
+      g.beginPath(); g.moveTo(x + w*0.12, base); g.lineTo(x, base - h); g.lineTo(x + w/2, base); g.closePath(); g.fillStyle = C('mount'); g.fill();
+      g.beginPath(); g.moveTo(x - w/2, base); g.lineTo(x, base - h); g.lineTo(x + w/2, base); g.moveTo(x, base - h); g.lineTo(x + w*0.12, base); neon('edge', 0.6 + pulse*0.4, 1.4);
+    };
+    pyr(W*0.32, HY + 4, M*0.5, M*0.3); pyr(W*0.58, HY + 2, M*0.36, M*0.21); pyr(W*0.75, HY + 1, M*0.22, M*0.12);
+    horizonLine(HY);
+    for (let L = 0; L < 3; L++){
+      const y0 = HY + (H - HY)*L*0.3;
+      g.beginPath(); g.moveTo(0, H + 2);
+      for (let x = 0; x <= W + 16; x += 16) g.lineTo(x, y0 + Math.sin(x*0.004 + L*2 + travel*0.06*(L + 1))*H*0.04 + Math.sin(x*0.011 + L)*H*0.015);
+      g.lineTo(W + 16, H + 2); g.closePath();
+      const dg = g.createLinearGradient(0, y0 - H*0.05, 0, H); dg.addColorStop(0, C(L === 0 ? 'sun2' : 'sky2', 0.9)); dg.addColorStop(1, C('ground'));
+      g.fillStyle = dg; g.fill(); neon('sun1', 0.3, 1);
+    }
+  },
+  // 9 · aurora sobre montanhas de gelo, refletida no lago
+  aurora(z, cx, cy, bass, M){
+    const HY = H*0.6;
+    skyGrad(HY); skyStars(z, HY);
+    if (!z.mt) z.mt = makeRidge(24, 1);
+    const cols = ['sky3', 'edge', 'grid'].map(k => [C(k, 0.16), C(k, 0.08), C(k, 0.03)]);
+    const aur = () => {
+      g.globalCompositeOperation = 'lighter';
+      cols.forEach((c, i) => {
+        for (let x = 0; x <= W; x += 6){
+          const y = H*(0.1 + i*0.08) + Math.sin(x*0.004 + T*0.5 + i*1.7)*H*0.06 + Math.sin(x*0.013 - T*0.7 + i)*H*0.02;
+          const len = H*(0.14 + 0.08*Math.sin(x*0.02 + T + i)) * (1 + bass*0.6);
+          g.fillStyle = c[0]; g.fillRect(x, y, 5, len*0.35); g.fillStyle = c[1]; g.fillRect(x, y + len*0.35, 5, len*0.35); g.fillStyle = c[2]; g.fillRect(x, y + len*0.7, 5, len*0.3);
+        }
+      });
+      g.globalCompositeOperation = 'source-over';
+    };
+    const scene = () => { aur(); ridge(z.mt, 0, HY, 0.3, 1, 0.9); };
+    scene();
+    g.fillStyle = C('sky0'); g.fillRect(0, HY, W, H - HY);
+    reflect(HY, scene);
+    horizonLine(HY);
+  },
+  // 10 · o retrato da cena 01 desenhado como constelação, linha por linha
+  constellation(z, cx, cy, bass, M){
+    g.globalCompositeOperation = 'lighter';
+    ['sky3', 'edge', 'sun2'].forEach((k, i) => {
+      const bx = cx + Math.cos(T*0.05 + i*2.1 + z.seed)*W*0.32, by = cy + Math.sin(T*0.04 + i*1.7 + z.seed)*H*0.3, r = Math.max(W, H)*0.55;
+      const ng = g.createRadialGradient(bx, by, 0, bx, by, r); ng.addColorStop(0, C(k, 0.14)); ng.addColorStop(1, C(k, 0));
+      g.fillStyle = ng; g.fillRect(0, 0, W, H);
     });
-    g.beginPath(); g.moveTo(x + w*0.2, y + h); g.lineTo(x + w*0.25, y + h*0.8); g.lineTo(x + w*0.75, y + h*0.8); g.lineTo(x + w*0.8, y + h); neon('edge', 0.6, 1.5);
-    for (const [sx, sy] of [[0.04, 0.06], [0.96, 0.06], [0.04, 0.94], [0.96, 0.94], [0.5, 0.9]]){ g.beginPath(); g.arc(x + w*sx, y + h*sy, w*0.01, 0, Math.PI*2); g.strokeStyle = C('star', 0.6); g.lineWidth = 1; g.stroke(); }
-  },
-  // 6 · duas caixas de som; os cones empurram com o grave e soltam ondas no bumbo
-  speakers(z, cx, cy, bass, M){
-    const r = Math.min(H*0.12, W*0.085), age = T - lastKick;
-    for (const side of [-1, 1]){
-      const x = cx + side * (W*0.5 - r*1.6);
-      g.beginPath(); g.rect(x - r*1.3, cy - r*3.9, r*2.6, r*7.8); g.fillStyle = C('sky0', 0.85); g.fill(); neon('edge', 0.6, 1.5);
-      for (const [yy, size] of [[cy - r*2.7, 0.5], [cy - r*0.6, 1], [cy + r*2.1, 1]]){
-        const rad = r * size, push = 1 + bass * (size > 0.6 ? 0.22 : 0.08);
-        g.beginPath(); g.arc(x, yy, rad, 0, Math.PI*2); g.fillStyle = C('mount'); g.fill(); neon('grid', 0.8, 1.5);
-        const cg = g.createRadialGradient(x, yy, 0, x, yy, rad*0.82*push);
-        cg.addColorStop(0, C('sky2')); cg.addColorStop(1, C('sky0'));
-        g.beginPath(); g.arc(x, yy, rad*0.82*push, 0, Math.PI*2); g.fillStyle = cg; g.fill();
-        g.beginPath(); g.arc(x, yy, rad*0.6*push, 0, Math.PI*2); g.moveTo(x + rad*0.42*push, yy); g.arc(x, yy, rad*0.42*push, 0, Math.PI*2);
-        g.strokeStyle = C('edge', 0.35); g.lineWidth = 1; g.stroke();
-        const dg = g.createRadialGradient(x - rad*0.06, yy - rad*0.06, 0, x, yy, rad*0.25*push);
-        dg.addColorStop(0, C('sun0')); dg.addColorStop(1, C('sun2'));
-        g.beginPath(); g.arc(x, yy, rad*0.25*push, 0, Math.PI*2); g.fillStyle = dg; g.fill();
-        if (size > 0.6 && age < 0.8){ g.beginPath(); g.arc(x, yy, rad + age*M*0.5, 0, Math.PI*2); g.strokeStyle = C('sky3', (1 - age/0.8)*0.6); g.lineWidth = 2; g.stroke(); }
+    g.globalCompositeOperation = 'source-over';
+    const s = M/440 * (1 + Math.sin(T*0.5)*0.015), ox = cx - 214*s, oy = cy - 290*s;
+    const P = ([x, y]) => [ox + x*s, oy + y*s];
+    let left = Math.min(1, zoneT/7) * PORTRAIT_SEGS;
+    g.beginPath();
+    for (const line of PORTRAIT){
+      for (let i = 1; i < line.length && left > 0; i++, left--){
+        const [x0, y0] = P(line[i - 1]), [x1, y1] = P(line[i]), f = Math.min(1, left);
+        g.moveTo(x0, y0); g.lineTo(x0 + (x1 - x0)*f, y0 + (y1 - y0)*f);
       }
     }
-  },
-  // 7 · pauta ondulante; cada nota tocada entra pela direita na altura certa
-  staff(z, cx, cy, bass, M){
-    const sp = Math.max(10, H*0.028), wav = x => Math.sin(x*0.005 + T*1.4 + z.seed) * H*0.05;
-    g.beginPath();
-    for (let k = 0; k < 5; k++) for (let x = 0; x <= W + 16; x += 16){ const y = cy + (k - 2)*sp + wav(x); x ? g.lineTo(x, y) : g.moveTo(x, y); }
-    neon('star', 0.5, 1.2);
-    g.font = `${Math.round(sp*3.2)}px ${SYMBOL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    for (const nt of staffNotes){
-      const y = cy - nt.step * sp/2 + wav(nt.x) - sp*0.9;
-      g.fillStyle = C(nt.k, 0.25); g.fillText(nt.g, nt.x + 2, y + 2);
-      g.fillStyle = C(nt.k, 0.95); g.fillText(nt.g, nt.x, y);
+    neon('edge', 0.55, 1.2);
+    const kick = Math.max(0, 1 - (T - lastKick)/0.4);
+    let idx = 0;
+    for (const line of PORTRAIT) for (const p of line){
+      const [x, y] = P(p), tw = 0.5 + 0.5*Math.sin(T*2 + idx*1.7), r = 1.2 + tw*1.4 + kick*1.8; idx++;
+      g.beginPath(); g.arc(x, y, r*2.6, 0, Math.PI*2); g.fillStyle = C('sun0', 0.12 + kick*0.15); g.fill();
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI*2); g.fillStyle = C('star', 0.95); g.fill();
     }
-  },
-  // 8 · metrônomo com o pêndulo batendo junto com o bumbo (♩ = 96)
-  metro(z, cx, cy, bass, M){
-    const base = H*0.92, top = H*0.2, bw = M*0.36, tw = M*0.1, hgt = base - top;
-    g.beginPath(); g.moveTo(cx - bw/2, base); g.lineTo(cx - tw/2, top); g.lineTo(cx + tw/2, top); g.lineTo(cx + bw/2, base); g.closePath();
-    g.fillStyle = C('sky0', 0.85); g.fill(); neon('edge', 0.85, 2);
-    g.beginPath(); for (let i = 0; i < 14; i++){ const yy = top + hgt*0.12 + i*hgt*0.045; g.moveTo(cx - tw*0.22, yy); g.lineTo(cx + tw*0.22, yy); }
-    g.strokeStyle = C('grid', 0.4); g.lineWidth = 1; g.stroke();
-    const ph = Math.min(1, (T - lastKick) / 0.625), ang = beatSide * Math.cos(Math.PI * ph) * 0.42;
-    const pvx = cx, pvy = base - hgt*0.12, L = hgt*0.95, sa = Math.sin(ang), ca = Math.cos(ang);
-    g.beginPath(); g.moveTo(pvx, pvy); g.lineTo(pvx + sa*L, pvy - ca*L); neon('sun1', 0.95, Math.max(2, M*0.006));
-    g.save(); g.translate(pvx + sa*L*0.62, pvy - ca*L*0.62); g.rotate(ang);
-    g.fillStyle = C('sun2'); g.fillRect(-M*0.03, -M*0.02, M*0.06, M*0.04); g.strokeStyle = C('star', 0.8); g.lineWidth = 1.5; g.strokeRect(-M*0.03, -M*0.02, M*0.06, M*0.04);
-    g.restore();
-    g.fillStyle = C('star', 0.9); g.font = `700 ${Math.round(M*0.032)}px ${SYMBOL_FONT}`; g.textAlign = 'center';
-    g.fillText('♩ = 96', cx, base - hgt*0.03);
-    const age = T - lastKick;
-    if (age < 0.6){ g.beginPath(); g.arc(cx, top, age*M*0.8, 0, Math.PI*2); g.strokeStyle = C('sky3', (1 - age/0.6)*0.5); g.lineWidth = 2; g.stroke(); }
-  },
-  // 9 · rádio FM: dial de 88 a 108 MHz passando e ondas saindo da antena
-  radio(z, cx, cy, bass, M){
-    const ay = H*0.12;
-    for (let i = 0; i < 6; i++){ const f = (T*0.6 + i/6) % 1, r = f * M*0.9; g.beginPath(); g.arc(cx, ay, r, Math.PI*0.15, Math.PI*0.85); g.strokeStyle = C('sky3', (1 - f)*0.5); g.lineWidth = 2; g.stroke(); }
-    g.beginPath(); g.moveTo(cx, ay); g.lineTo(cx - M*0.03, ay - M*0.08); g.moveTo(cx, ay); g.lineTo(cx + M*0.03, ay - M*0.08); g.moveTo(cx, ay); g.lineTo(cx, ay - M*0.1); neon('edge', 0.9, 1.5);
-    const dy = cy + H*0.2, dh = Math.max(64, H*0.13), x0 = W*0.06, x1 = W*0.94, f = 88 + ((T*0.35 + z.seed) % 20), ppm = (x1 - x0) / 8;
-    g.beginPath(); g.rect(x0, dy - dh/2, x1 - x0, dh); g.fillStyle = C('sky0', 0.85); g.fill(); neon('edge', 0.7, 1.5);
-    g.save(); g.beginPath(); g.rect(x0, dy - dh/2, x1 - x0, dh); g.clip();
-    g.beginPath();
-    for (let d = Math.floor((f - 5) * 5); d <= (f + 5) * 5; d++){ const m = d / 5; if (m < 87.5 || m > 108) continue; const x = cx + (m - f)*ppm, len = d % 5 === 0 ? dh*0.35 : dh*0.15; g.moveTo(x, dy + dh/2); g.lineTo(x, dy + dh/2 - len); }
-    g.strokeStyle = C('grid', 0.8); g.lineWidth = 1; g.stroke();
-    g.fillStyle = C('star', 0.85); g.font = `600 ${Math.round(Math.max(11, dh*0.2))}px 'Chakra Petch', sans-serif`; g.textAlign = 'center';
-    for (let m = Math.ceil((f - 5) / 2) * 2; m <= f + 5; m += 2){ if (m < 88 || m > 108) continue; g.fillText(String(m), cx + (m - f)*ppm, dy - dh*0.05); }
-    g.restore();
-    g.beginPath(); g.moveTo(cx, dy - dh*0.62); g.lineTo(cx, dy + dh*0.62); neon('sun2', 1, 2);
-    g.fillStyle = C('sun0'); g.font = `700 ${Math.round(Math.max(14, M*0.034))}px Syncopate, sans-serif`;
-    g.fillText('FM ' + f.toFixed(1).replace('.', ',') + ' MHz', cx, dy - dh*0.78);
-    for (let i = 0; i < 5; i++){ const on = bass * 6 > i; g.fillStyle = C(on ? 'sun1' : 'star', on ? 0.9 : 0.15); g.fillRect(x1 - 70 + i*12, dy - dh*0.85 - i*5, 8, 8 + i*5); }
-  },
-  // 10 · mesa de som com os canais da própria trilha: faders, botões e medidores de nível
-  mixer(z, cx, cy, bass, M){
-    const all = [['KICK', 0], ['SNARE', 5], ['HAT', 10], ['BASS', 1], ['PAD', 3], ['ARP', 6], ['LEAD', 7], ['MASTER', -1]];
-    const ch = W < 600 ? [all[0], all[3], all[6], all[7]] : all, n = ch.length;
-    const ph = Math.min(H*0.44, 360), py0 = H - ph - H*0.03, pw = Math.min(W*0.92, n*120), px0 = cx - pw/2, cw = pw/n;
-    g.beginPath(); g.rect(px0, py0, pw, ph); g.fillStyle = C('sky0', 0.82); g.fill(); neon('edge', 0.7, 1.5);
-    if (!z.fad || z.fad.length !== n) z.fad = new Float32Array(n);
-    ch.forEach(([label, b], i) => {
-      const x = px0 + cw*i + cw/2;
-      let v = b < 0 ? (band(0, 12) + band(3, 12) + band(6, 12)) / 3 : band(b, 12);
-      v = Math.min(1, v * 1.3); z.fad[i] += (v - z.fad[i]) * 0.08;
-      for (let k = 0; k < 2; k++){
-        const ky = py0 + ph*0.12 + k*ph*0.14, kr = Math.min(cw*0.15, ph*0.05), a = -2.4 + (0.2 + z.fad[i]*0.6 + k*0.15 + 0.1*Math.sin(T*0.5 + i)) * 4.8;
-        g.beginPath(); g.arc(x, ky, kr, 0, Math.PI*2); g.fillStyle = C('mount'); g.fill(); neon('grid', 0.8, 1.2);
-        g.beginPath(); g.moveTo(x, ky); g.lineTo(x + Math.cos(a)*kr, ky + Math.sin(a)*kr); g.strokeStyle = C('star', 0.9); g.lineWidth = 2; g.stroke();
-      }
-      const ty0 = py0 + ph*0.42, ty1 = py0 + ph*0.86;
-      g.beginPath(); g.moveTo(x - cw*0.08, ty0); g.lineTo(x - cw*0.08, ty1); g.strokeStyle = C('star', 0.3); g.lineWidth = 2; g.stroke();
-      const fy = ty1 - (0.25 + 0.65*z.fad[i]) * (ty1 - ty0);
-      g.fillStyle = C('sun1'); g.fillRect(x - cw*0.08 - cw*0.16, fy - 5, cw*0.32, 10);
-      const leds = 12, lh = (ty1 - ty0) / leds, on = Math.round(v * leds);
-      for (let l = 0; l < leds; l++){
-        const k = l < 8 ? 'grid' : l < 10 ? 'sun1' : 'sun2';
-        g.fillStyle = C(k, l < on ? 0.95 : 0.12); g.fillRect(x + cw*0.18, ty1 - (l + 1)*lh + 1, cw*0.12, lh - 2);
-      }
-      g.fillStyle = C('star', 0.85); g.font = `600 ${Math.round(Math.max(10, cw*0.12))}px 'Chakra Petch', sans-serif`; g.textAlign = 'center';
-      g.fillText(label, x, py0 + ph*0.96);
-    });
   }
 };
 function drawFeature(z, a, cx, cy, sc){
   if (a <= 0) return;
   const ga = g.globalAlpha; g.globalAlpha = ga * a;
-  FEAT[z.feature](z, cx, cy, band(0, 12), Math.min(W, H));
+  FEAT[z.feature](z, cx, cy, bassLevel(), Math.min(W, H));
   g.globalAlpha = ga; g.globalCompositeOperation = 'source-over'; g.setLineDash([]);
-  g.textAlign = 'start'; g.textBaseline = 'alphabetic';
 }
 function drawInfinite(dt, alpha){
   const cx = W/2 - mx*30, cy = H/2 - my*20, sc = Math.max(W, H) * 0.5;
@@ -814,10 +897,14 @@ function drawInfinite(dt, alpha){
   bg.addColorStop(0, C('sky1')); bg.addColorStop(1, C('sky0'));
   g.fillStyle = bg; g.fillRect(0, 0, W, H);
   if (zone || prevZone) readAudio();
+  travel += dt * (zone ? zone.speed : 1) * (1 + pulse*0.6);
   if (prevZone) drawFeature(prevZone, prevZone.fade, cx, cy, sc);
   if (zone) drawFeature(zone, zone.fade, cx, cy, sc);
   const zs = zone ? zone.speed : 1;
+  const land = (zone && zone.land ? zone.fade : 0) + (prevZone && prevZone.land ? prevZone.fade : 0);
+  g.globalAlpha = alpha * Math.max(0, 1 - land);
   if (journey.phase === 'infinite') drawStars(cx, cy, sc, 0.1 * zs + warp*warp*(REDUCED ? 0.2 : 2.4) + pulse*0.03, H, dt);
+  g.globalAlpha = alpha;
   const sp = (REDUCED ? 0.2 : (0.32 + pulse*0.12) * zs + warp*1.8) * dt;
   for (const o of objs){ o.z -= sp; o.rot += o.spin * dt; }
   for (let i = objs.length - 1; i >= 0; i--) if (objs[i].z < 0.04) objs.splice(i, 1);
@@ -826,7 +913,7 @@ function drawInfinite(dt, alpha){
     const s = o.size / o.z * sc, x = cx + o.x / o.z * sc, y = cy + o.y / o.z * sc, m = s * 2.5;
     if (x + m < 0 || x - m > W || y + m < 0 || y - m > H) continue;
     const a = Math.min(1, (ZMAX - o.z) / 0.9) * Math.min(1, (o.z - 0.04) / 0.2);
-    g.globalAlpha = alpha * a;
+    g.globalAlpha = alpha * a * Math.max(0, 1 - land);
     DRAW[o.type](o, x, y, s);
   }
   g.globalAlpha = 1;
@@ -898,9 +985,9 @@ function updateHud(){
   ui.ctaTxt.textContent = scene === 'portrait' ? 'Entrar no universo' : 'Reiniciar';
   const txt = {
     portrait: ['Cena 01 · Retrato', 'Azul em nanquim', 'Passe o cursor (ou toque) nela para ver o sorriso.'],
-    cosmos:   ['Cena 02 · Cosmos', palTo.name, 'Em instantes a viagem segue sozinha. Clique no céu para soltar estrelas cadentes.'],
+    cosmos:   ['Cena 02 · Cosmos', palTo.name, 'Em instantes a viagem segue sozinha.'],
     lift:     ['Decolagem', 'Rumo ao infinito', 'O horizonte ficou para trás.'],
-    infinite: ['Cena 03 · Universo infinito', palTo.name, 'Dez cenas musicais em sequência. Depois da décima, elas recomeçam com novas cores e outro tom. Clique no céu para soltar estrelas cadentes; Reiniciar volta ao início.']
+    infinite: ['Cena 03 · Universo infinito', palTo.name, 'Dez cenários synthwave passam sozinhos no ritmo da música. Depois do décimo, eles recomeçam com novas cores e outro tom. Reiniciar volta ao início.']
   }[scene];
   ui.label.textContent = txt[0]; ui.name.textContent = txt[1]; ui.hint.textContent = txt[2];
   ui.dist.hidden = scene !== 'infinite';
@@ -954,15 +1041,11 @@ function restart(){
   if (scene === 'portrait' || busy) return; busy = true;
   journey.phase = 'idle'; journey.t = 0;
   Sound.setLevel(0); Sound.setVariation(0, 0);
-  zone = null; prevZone = null; staffNotes.length = 0; keyFlash.clear(); setPal(PAL[palI], 0.9);
+  zone = null; prevZone = null; setPal(PAL[0], 0.9);
   scene = 'portrait'; el.app.dataset.scene = 'portrait';
   el.figure.classList.remove('leaving'); void el.figure.offsetWidth; el.figure.classList.add('arriving');
   updateHud();
   setTimeout(() => { spaceOn = false; parts.length = 0; shoots.length = 0; objs.length = 0; warp = 0; busy = false; }, 1100);
-}
-function nextPalette(d = 1){
-  palI = (palI + d + PAL.length) % PAL.length; setPal(PAL[palI], 0.9); flash = 1;
-  updateHud();
 }
 
 ui.cta.addEventListener('click', () => scene === 'portrait' ? toCosmos() : restart());
@@ -977,11 +1060,6 @@ document.addEventListener('pointerdown', e => {
   if (Sound.running || e.target.closest('#soundBtn,label[for="trackFile"]')) return;
   Sound.start();
 }, true);
-document.addEventListener('keydown', e => {
-  if (scene === 'portrait') return;
-  if (e.key === 'ArrowRight') nextPalette(1);
-  else if (e.key === 'ArrowLeft') nextPalette(-1);
-});
 cv.addEventListener('pointerdown', e => {
   if (scene === 'portrait') return;
   spawnShoot(e.clientX, e.clientY, e.clientX > W/2 ? -1 : 1);
@@ -1000,13 +1078,7 @@ function onEvent(ev){
   else if (ev.type === 'bar'){
     if (scene === 'portrait' && ev.bar % 2 === 0){ P.target = 1; P.nextSwap = 1.8; }
     if (scene === 'cosmos' && Math.random() < 0.5) spawnShoot(Math.random() * W, Math.random() * H * 0.2);
-    if (ev.chord) chordNow = ev.chord;
-    if (journey.phase === 'infinite' && ev.bar % 2 === 0) spawnObj(ZMAX, 'ring');
-  }
-  else if (ev.type === 'note'){
-    let n = ev.n; while (n < 48) n += 12; while (n > 83) n -= 12;
-    keyFlash.set(n, 1);
-    if (zone && zone.feature === 'staff') addStaffNote(ev.n);
+    if (journey.phase === 'infinite' && zone && zone.objects && ev.bar % 2 === 0) spawnObj(ZMAX, 'ring');
   }
 }
 
@@ -1022,16 +1094,12 @@ function frame(now){
   else if (journey.phase === 'lift' && journey.t >= LIFT) startInfinite();
   if (journey.phase === 'infinite'){
     ly += dt * 2380 * (1 + warp * 6);
-    hudT -= dt; if (hudT <= 0){ hudT = 0.2; ui.dist.textContent = 'Faixa ' + (zone.idx + 1) + ' de ' + SCENES.length + ' · volta ' + zone.loop + ' · ' + fmt.format(ly) + ' anos-luz'; }
+    hudT -= dt; if (hudT <= 0){ hudT = 0.2; ui.dist.textContent = 'Cenário ' + (zone.idx + 1) + ' de ' + SCENES.length + ' · volta ' + zone.loop + ' · ' + fmt.format(ly) + ' anos-luz'; }
     zoneT += dt; zone.fade = Math.min(1, zone.fade + dt / 3);
     if (prevZone){ prevZone.fade -= dt / 3; if (prevZone.fade <= 0) prevZone = null; }
     if (zoneT >= zone.dur) newZone();
-    spawnT -= dt; if (spawnT <= 0){ spawnObj(ZMAX); spawnT = zone.rate * (0.6 + Math.random() * 0.8); }
-    if (silent){ ringT -= dt; if (ringT <= 0){ spawnObj(ZMAX, 'ring'); ringT = 5; } }
-    // sem a trilha sintetizada, as notas do teclado e da pauta são simuladas no mesmo andamento
-    if (!Sound.synth){ noteClock -= dt; if (noteClock <= 0){ noteClock = 0.3125; onEvent({ type: 'note', n: pick(chordNow) + 12 }); } }
-    for (const [k, v] of keyFlash){ const nv = v - dt * 2.5; if (nv <= 0) keyFlash.delete(k); else keyFlash.set(k, nv); }
-    for (let i = staffNotes.length - 1; i >= 0; i--){ staffNotes[i].x -= dt * Math.max(140, W * 0.16); if (staffNotes[i].x < -40) staffNotes.splice(i, 1); }
+    if (zone.objects){ spawnT -= dt; if (spawnT <= 0){ spawnObj(ZMAX); spawnT = zone.rate * (0.6 + Math.random() * 0.8); } }
+    if (silent && zone.objects){ ringT -= dt; if (ringT <= 0){ spawnObj(ZMAX, 'ring'); ringT = 5; } }
   }
 
   if (scene === 'portrait' || busy) updatePortrait(dt, T);
