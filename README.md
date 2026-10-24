@@ -8,6 +8,33 @@ Site synthwave em HTML, CSS e JavaScript puros, sem bibliotecas e sem etapa de b
 
 A trilha sonora é sintetizada em tempo real com a Web Audio API e sincronizada com as animações.
 
+## Galeria
+
+### Retrato e transição
+
+| Retrato | Saída de cena |
+|---|---|
+| <img src="docs/img/01-retrato.jpg" alt="Retrato" width="420"> | <img src="docs/img/02-transicao.jpg" alt="Glitch neon e dissolução do retrato em estrelas" width="420"> |
+| Ela sorri, pisca e olha para você. | Ao clicar em "Entrar no universo", ela sofre um glitch neon e se dissolve em estrelas. |
+
+### Cosmos
+
+![Cena 02: paisagem synthwave com o título cromado, sol listrado, montanhas em wireframe e grade neon](docs/img/03-cosmos.jpg)
+
+### Universo infinito: os 10 cenários
+
+Eles passam sozinhos, nesta ordem, no ritmo da música, e recomeçam com novas cores depois do décimo.
+
+|   |   |
+|---|---|
+| <img src="docs/img/cenario-01-rodovia-neon.jpg" alt="Rodovia Neon" width="420"><br>**1. Rodovia Neon** | <img src="docs/img/cenario-02-metropole-neon.jpg" alt="Metrópole Neon" width="420"><br>**2. Metrópole Neon** |
+| <img src="docs/img/cenario-03-praia-das-palmeiras.jpg" alt="Praia das Palmeiras" width="420"><br>**3. Praia das Palmeiras** | <img src="docs/img/cenario-04-oceano-digital.jpg" alt="Oceano Digital" width="420"><br>**4. Oceano Digital** |
+| <img src="docs/img/cenario-05-voo-sobre-as-montanhas.jpg" alt="Voo sobre as Montanhas" width="420"><br>**5. Voo sobre as Montanhas** | <img src="docs/img/cenario-06-tunel-hiperespaco.jpg" alt="Túnel Hiperespaço" width="420"><br>**6. Túnel Hiperespaço** |
+| <img src="docs/img/cenario-07-planeta-gigante.jpg" alt="Planeta Gigante" width="420"><br>**7. Planeta Gigante** | <img src="docs/img/cenario-08-deserto-das-piramides.jpg" alt="Deserto das Pirâmides" width="420"><br>**8. Deserto das Pirâmides** |
+| <img src="docs/img/cenario-09-aurora-glacial.jpg" alt="Aurora Glacial" width="420"><br>**9. Aurora Glacial** | <img src="docs/img/cenario-10-constelacao-do-retrato.jpg" alt="Constelação do Retrato" width="420"><br>**10. Constelação do Retrato** |
+
+> As capturas usam as fontes alternativas do site. No navegador, com acesso ao Google Fonts, os títulos aparecem em Syncopate e os textos em Chakra Petch.
+
 ## Arquivos
 
 | Arquivo | Conteúdo |
