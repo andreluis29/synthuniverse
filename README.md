@@ -4,7 +4,7 @@ Site synthwave em HTML, CSS e JavaScript puros, sem bibliotecas e sem etapa de b
 
 1. **Retrato.** Uma mulher de pele azulada, desenhada em traço de nanquim, sorri, pisca e olha para você.
 2. **Cosmos.** Ao clicar em "Entrar no universo", ela se dissolve em estrelas e surge uma paisagem synthwave com sol listrado, montanhas e grade neon.
-3. **Universo infinito.** A câmera decola e a viagem segue sem fim por regiões geradas na hora. A cada região mudam a paleta, o cenário, os objetos e a harmonia da trilha. A viagem só para no botão **Reiniciar**.
+3. **Universo infinito.** A câmera decola e a viagem segue por **10 cenas musicais**, como as faixas de um álbum: Vinil Cósmico, Equalizador Estelar, Osciloscópio Sideral, Teclado Infinito, Cassete Nebular, Paredão de Caixas, Chuva de Notas, Metrônomo Pulsar, Sintonia FM e Mesa de Som. Cada cena reage à música tocando. Depois da décima, as dez recomeçam com novas cores e outro tom. A viagem só para no botão **Reiniciar**.
 
 A trilha sonora é sintetizada em tempo real com a Web Audio API e sincronizada com as animações.
 

@@ -45,7 +45,7 @@ flowchart LR
   B --> C[Cosmos · 12 s]
   C --> D[Decolagem · 4,2 s]
   D --> E[Universo infinito]
-  E -- nova região a cada 18–28 s --> E
+  E -- 10 cenas musicais em sequência, depois recomeçam --> E
   E -- clique em Reiniciar --> A
   C -- Reiniciar --> A
   D -- Reiniciar --> A
@@ -70,8 +70,8 @@ O `script.js` é dividido em blocos marcados com comentários:
 | `RETRATO` | Sorriso, piscadas, olhar, respiração |
 | `COSMOS` | Paletas, campo de estrelas, montanhas, sol |
 | `sequência da viagem` | Estado `journey`, desenho do cosmos e da decolagem |
-| `universo infinito` | Objetos espaciais (planetas, galáxias, portais etc.) |
-| `regiões` | Geração de regiões e cenários de fundo |
+| `universo infinito` | Objetos espaciais (planetas, galáxias, notas, discos, portais etc.) |
+| `dez cenas musicais` | As 10 cenas, leitura do espectro e da forma de onda, desenho de cada cenário |
 | `CENAS & HUD` | Transições entre cenas, textos do painel, eventos, laço principal |
 
 ---
@@ -83,7 +83,7 @@ O `script.js` é dividido em blocos marcados com comentários:
 3. **"Entrar no universo".** Ela abre o sorriso, sofre um glitch com cores separadas (magenta e ciano), sai de cena e se dissolve em cerca de 560 partículas. O fundo cinza some e o canvas aparece com efeito de velocidade de dobra.
 4. **Cosmos (cena 02).** Céu em degradê, sol listrado, montanhas em wireframe e grade neon em movimento. Depois de 12 s a viagem segue sozinha.
 5. **Decolagem.** O título sobe e some, o sol afunda e a grade acelera. A câmera sobe, o horizonte desce para fora da tela e o espaço profundo aparece por cima.
-6. **Universo infinito (cena 03).** Viagem contínua por regiões geradas na hora. Nada se repete e nada para até o visitante clicar em **Reiniciar**.
+6. **Universo infinito (cena 03).** Viagem contínua por **10 cenas musicais** em sequência, como as faixas de um álbum. Depois da décima, elas recomeçam ("volta 2", "volta 3"...) com novas cores e outro tom. Nada para até o visitante clicar em **Reiniciar**.
 
 ---
 
@@ -176,17 +176,20 @@ vozes ──► master ──► compressor ──► analisador ──► saíd
 ### Níveis e variações
 
 - `setLevel(0 | 1 | 2)`: retrato = pad e arpejo; cosmos = + bateria e baixo; infinito = + melodia. Com faixa própria, o nível abre ou fecha um filtro: abafado no retrato, aberto no espaço.
-- `setVariation(progressão, transposição)`: a cada nova região, sorteia uma de quatro progressões (Am–F–C–G, Am–Em–F–G, Dm–B♭–F–C, Am–G–F–E) e um tom. A troca só acontece na virada do compasso, então nunca corta a música no meio.
+- `setVariation(progressão, transposição)`: cada uma das 10 cenas tem a sua progressão (Am–F–C–G, Am–Em–F–G, Dm–B♭–F–C ou Am–G–F–E) e o seu tom. A cada volta completa, o tom ainda sobe ou desce um tom inteiro. A troca só acontece na virada do compasso, então nunca corta a música no meio.
 
 ### Sincronia com o visual
 
-O sequenciador coloca eventos numa fila (`kick`, `snare`, `bar`) com o horário exato. O laço principal chama `Sound.poll()` e reage quando cada evento chega:
+O sequenciador coloca eventos numa fila (`kick`, `snare`, `bar` com o acorde atual e `note` com cada nota do arpejo e da melodia) com o horário exato. O laço principal chama `Sound.poll()` e reage quando cada evento chega:
 
 - `kick`: `pulse = 1` faz a grade, o sol e os portais pulsarem.
 - `snare`: um flash suave no céu.
-- `bar`: o retrato sorri, o cosmos lança estrelas cadentes e o infinito cria um portal a cada dois compassos.
+- `bar`: o retrato sorri, o cosmos lança estrelas cadentes e o infinito cria um portal a cada dois compassos. O acorde do compasso acende as teclas do Teclado Infinito.
+- `note`: acende a tecla da nota tocada e, na Chuva de Notas, faz a nota entrar na pauta na altura certa.
 
-Com uma **faixa própria**, não há fila de eventos. O `poll()` mede a energia dos graves no analisador e detecta batidas quando ela passa 25% da média recente. Se o som estiver desligado, um relógio interno gera pulsos a 96 BPM para o visual não ficar parado.
+As cenas musicais também leem o analisador diretamente: `Sound.spectrum()` devolve as frequências (equalizador, caixas de som, mesa de som, vinil) e `Sound.wave()` devolve a forma de onda (osciloscópio).
+
+Com uma **faixa própria**, não há fila de eventos. O `poll()` mede a energia dos graves no analisador e detecta batidas quando ela passa 25% da média recente. Se o som estiver desligado, um relógio interno gera pulsos a 96 BPM, `readAudio()` simula espectro e forma de onda, e notas do acorde são sorteadas no mesmo andamento. Assim o visual nunca fica parado.
 
 ### Faixa própria
 
@@ -234,25 +237,38 @@ Cada objeto tem posição 3D e é projetado como as estrelas: tamanho na tela = 
 | `asteroid` | Grupo de 6 a 12 rochas irregulares (polígonos de 7 pontos) girando |
 | `crystal` | Octaedro em wireframe girando em 3D, com brilho neon |
 | `ring` | Portal neon centralizado que a câmera atravessa, com um anel tracejado girando |
+| `note` | Figura musical (♪ ♫ ♩ ♬) com sombra colorida |
+| `disc` | Disco de vinil pequeno com sulcos, rótulo e reflexo girando |
 
-### Regiões
+### As 10 cenas musicais
 
-A cada 18 a 28 s, `newZone()` cria uma região nova e sorteia:
+O universo infinito toca as cenas abaixo em ordem, como faixas de um álbum. Cada cena dura de 18 a 24 s e `newZone()` monta a próxima. O índice vem de `zoneN % 10` e a volta de `zoneN / 10`.
 
-- **Nome**, combinando duas listas (por exemplo "Fenda de Cobalto"). Evita repetir o nome anterior.
-- **Paleta** gerada (ver a seção 9), com transição de cerca de 4,5 s.
-- **Cenário de fundo** (`feature`), nunca igual ao da região anterior:
-  - `tunnel`: túnel poligonal neon de 3 a 8 lados, girando e avançando.
-  - `nebula`: três nebulosas gigantes à deriva.
-  - `aurora`: quatro faixas onduladas.
-  - `storm`: estrelas muito mais rápidas.
-  - `clear`: espaço limpo.
-- **Pesos dos objetos**: cada tipo tem 40% de chance de ficar de fora, e os portais têm presença mínima garantida.
-- **Ritmo de criação**, **velocidade** e **harmonia da trilha**.
+| Faixa | Cena | Cenário (`feature`) | Reage a | Objetos que mais aparecem |
+|---|---|---|---|---|
+| 1 | Vinil Cósmico | Disco gigante girando a 33⅓ RPM, sulcos, rótulo "LADO A" e braço da agulha | Graves acendem os sulcos | Discos, notas |
+| 2 | Equalizador Estelar | 40 colunas de LEDs (24 no celular) com picos que caem devagar, espelhadas no topo | Espectro real em escala logarítmica | Planetas, cristais |
+| 3 | Osciloscópio Sideral | Retícula 10×8 e três traços da forma de onda | Forma de onda real | Galáxias, nebulosas |
+| 4 | Teclado Infinito | Três oitavas de teclado em perspectiva | Acorde atual (teclas acesas) e cada nota tocada (brilho forte) | Notas, cristais |
+| 5 | Cassete Nebular | Fita C-60 gigante; a fita passa do rolo esquerdo para o direito ao longo da cena | Rolos girando | Nebulosas, discos, sóis |
+| 6 | Paredão de Caixas | Duas caixas com tweeter e dois woofers | Cones empurram com o grave; ondas saem no bumbo | Asteroides, planetas |
+| 7 | Chuva de Notas | Pauta de cinco linhas ondulando | Cada nota entra pela direita na altura da clave de sol | Notas |
+| 8 | Metrônomo Pulsar | Metrônomo de pêndulo com a marcação ♩ = 96 | O pêndulo chega ao extremo exatamente no bumbo | Cristais, sóis |
+| 9 | Sintonia FM | Dial de 88 a 108 MHz passando, leitura da frequência e ondas saindo da antena | Barras de sinal com o grave | Planetas, nebulosas |
+| 10 | Mesa de Som | 8 canais com os nomes das vozes da trilha (KICK, SNARE, HAT, BASS, PAD, ARP, LEAD, MASTER), 2 botões, fader e medidor de LEDs | Cada canal lê a sua faixa de frequência | Discos, notas |
 
-A região anterior continua desenhada enquanto some em 3 s (`prevZone`), então o cenário de fundo muda com uma fusão suave.
+Ao entrar em cada cena, `newZone()` também:
 
-O painel mostra o número da região e a distância percorrida em anos-luz. É um contador decorativo que acelera com o `warp`.
+- gera uma **paleta nova** (seção 9), com transição de cerca de 4,5 s, para que nenhuma volta repita as cores;
+- define a **harmonia** da cena (progressão e tom) com `Sound.setVariation`;
+- sorteia **ritmo de criação** e **velocidade** dos objetos;
+- dá um flash e um pequeno salto de dobra.
+
+A cena anterior continua desenhada enquanto some em 3 s (`prevZone`), então os cenários se fundem na troca.
+
+Os dados de áudio passam por duas funções: `readAudio()` atualiza `SPEC` (256 faixas de frequência) e `WAVE` (512 amostras) uma vez por quadro, e `band(i, n)` agrupa o espectro em `n` faixas em escala logarítmica, que é como o ouvido percebe as alturas.
+
+O painel mostra "Faixa N de 10", o número da volta e a distância percorrida em anos-luz (um contador decorativo que acelera com o `warp`).
 
 ---
 
@@ -315,12 +331,12 @@ A função `frame()` roda a cada quadro, por `requestAnimationFrame`, e executa 
 | Sua música | `CONFIG.musicUrl` em `script.js` | `''` (trilha sintetizada) |
 | Tempo da cena 02 | `COSMOS_HOLD` | `12` s |
 | Duração da decolagem | `LIFT` | `4.2` s |
-| Duração das regiões | `dur: 18 + Math.random()*10` em `newZone()` | 18–28 s |
+| Duração de cada cena musical | `dur: 18 + Math.random()*6` em `newZone()` | 18–24 s |
+| Ordem, nomes, harmonia e objetos das cenas | `SCENES` | 10 cenas |
 | Andamento da trilha | `BPM` no módulo `Sound` | `96` |
 | Progressões de acordes | `PROGS` no módulo `Sound` | 4 progressões |
 | Paletas fixas | `PAL` | 3 paletas |
 | Faixa de matizes geradas | `genPalette()` | 175°–345° e 0°–30° |
-| Nomes das regiões | `NAME_A`, `NAME_B` | 14 × 16 palavras |
 | Cores da pele e do traço | `.skin`, `.shade`, `.light`, `.ink` em `style.css` | tons azulados |
 | Largura do tronco | `scale(.88 1)` antes de `#bodyG` em `index.html` | `.88` |
 | Altura do rosto | `scale(1 .85)` dentro de `#headFront` | `.85` |
@@ -334,12 +350,12 @@ A função `frame()` roda a cada quadro, por `requestAnimationFrame`, e executa 
 
 1. Em `spawnObj()`, adicione um ramo `else if (type === 'meuTipo')` que defina `o.size`, `o.x`, `o.y` e os dados próprios do objeto.
 2. Em `DRAW`, adicione `meuTipo(o, x, y, s){ ... }`. Ela recebe o centro na tela (`x`, `y`) e o raio (`s`). Use `C('chave', alfa)` para as cores.
-3. Inclua `'meuTipo'` em `OBJ_TYPES` para que as regiões passem a sorteá-lo.
+3. Inclua `meuTipo` com um peso no `weights` das cenas em `SCENES` onde ele deve aparecer.
 
-**Novo cenário de fundo de região**
+**Nova cena musical**
 
-1. Inclua o nome em `FEATURES`.
-2. Em `drawFeature()`, adicione um ramo `else if (z.feature === 'meuCenario')`. O parâmetro `a` (0–1) é a opacidade da transição.
+1. Em `FEAT`, adicione `meuCenario(z, cx, cy, bass, M){ ... }`. A função recebe o centro da tela, o nível de grave (0–1) e o menor lado da tela (`M`). A transparência da transição já vem aplicada. Para reagir à música, use `band(i, n)`, `WAVE`, `chordNow`, `keyFlash` ou `lastKick`.
+2. Adicione um item em `SCENES` com `name`, `feature: 'meuCenario'`, `weights`, `prog` e `tr`. O ciclo passa a ter uma cena a mais automaticamente.
 
 **Nova progressão de acordes**
 
