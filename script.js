@@ -652,3 +652,147 @@ function burst(){
   }
 }
 
+/* ============================ CENAS & HUD ============================ */
+let scene = 'portrait', busy = false;
+const ui = { steps: [$('stepP'), $('stepC'), $('stepI')], cta: $('cta'), ctaTxt: $('ctaTxt'), label: $('sceneLabel'), name: $('sceneName'), hint: $('sceneHint'), track: $('trackName'), dist: $('distance'), soundBtn: $('soundBtn'), soundTxt: $('soundTxt') };
+const fmt = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
+
+function updateHud(){
+  const st = scene === 'portrait' ? 0 : scene === 'cosmos' ? 1 : 2;
+  ui.steps.forEach((e, i) => i === st ? e.setAttribute('aria-current', 'step') : e.removeAttribute('aria-current'));
+  ui.ctaTxt.textContent = scene === 'portrait' ? 'Entrar no universo' : 'Reiniciar';
+  const txt = {
+    portrait: ['Cena 01 · Retrato', 'Azul em nanquim', 'Passe o cursor (ou toque) nela para ver o sorriso.'],
+    cosmos:   ['Cena 02 · Cosmos', palTo.name, 'Em instantes a viagem segue sozinha. Clique no céu para soltar estrelas cadentes.'],
+    lift:     ['Decolagem', 'Rumo ao infinito', 'O horizonte ficou para trás.'],
+    infinite: ['Cena 03 · Universo infinito', palTo.name, 'O universo muda sozinho a cada região e nunca se repete. Clique no céu para soltar estrelas cadentes. Para voltar ao início, clique em Reiniciar.']
+  }[scene];
+  ui.label.textContent = txt[0]; ui.name.textContent = txt[1]; ui.hint.textContent = txt[2];
+  ui.dist.hidden = scene !== 'infinite';
+  updateSound();
+}
+function updateSound(){
+  ui.track.textContent = Sound.label();
+  const on = Sound.running && !Sound.muted;
+  ui.soundBtn.classList.toggle('on', on);
+  ui.soundBtn.setAttribute('aria-pressed', String(on));
+  ui.soundTxt.textContent = on ? 'Som ligado' : (Sound.running ? 'Som mudo' : 'Ligar som');
+}
+Sound.onChange(updateSound);
+
+// fim da cena 01: sorriso, glitch e dissolução
+function toCosmos(){
+  if (scene !== 'portrait' || busy) return; busy = true;
+  Sound.start(); Sound.setLevel(1); Sound.whoosh();
+  P.force = true;
+  setTimeout(() => {
+    el.figure.classList.remove('arriving'); el.figure.classList.add('leaving');
+    el.app.dataset.scene = 'leaving'; spaceOn = true; warp = 1; palK = 1;
+  }, 420);
+  setTimeout(burst, 880);
+  setTimeout(() => {
+    el.app.dataset.scene = 'cosmos'; scene = 'cosmos'; busy = false; P.force = false;
+    journey.phase = 'cosmos'; journey.t = 0;
+    updateHud();
+  }, 1750);
+}
+// fim da cena 02: o sol afunda, a grade acelera e a câmera decola
+function startLift(){
+  journey.phase = 'lift'; journey.t = 0;
+  scene = 'lift'; el.app.dataset.scene = 'lift';
+  Sound.whoosh();
+  objs.length = 0;
+  for (let i = 0; i < 7; i++) spawnObj(1.2 + Math.random() * 2.8);
+  for (let i = 0; i < 6; i++) setTimeout(() => { if (journey.phase === 'lift') spawnShoot(Math.random() * W, Math.random() * H * 0.3); }, i * 380);
+  updateHud();
+}
+// cena 03: universo infinito, só para em "Reiniciar"
+function startInfinite(){
+  journey.phase = 'infinite'; journey.t = 0;
+  scene = 'infinite'; el.app.dataset.scene = 'infinite';
+  warp = 1; flash = 1; ly = 0; autoPalT = 0; spawnT = 0.5; ringT = 1;
+  Sound.setLevel(2);
+  zone = null; prevZone = null; zoneN = 0;
+  newZone();
+}
+function restart(){
+  if (scene === 'portrait' || busy) return; busy = true;
+  journey.phase = 'idle'; journey.t = 0;
+  Sound.setLevel(0); Sound.setVariation(0, 0);
+  zone = null; prevZone = null; setPal(PAL[palI], 0.9);
+  scene = 'portrait'; el.app.dataset.scene = 'portrait';
+  el.figure.classList.remove('leaving'); void el.figure.offsetWidth; el.figure.classList.add('arriving');
+  updateHud();
+  setTimeout(() => { spaceOn = false; parts.length = 0; shoots.length = 0; objs.length = 0; warp = 0; busy = false; }, 1100);
+}
+function nextPalette(d = 1){
+  palI = (palI + d + PAL.length) % PAL.length; setPal(PAL[palI], 0.9); flash = 1;
+  updateHud();
+}
+
+ui.cta.addEventListener('click', () => scene === 'portrait' ? toCosmos() : restart());
+ui.soundBtn.addEventListener('click', () => { if (!Sound.running) Sound.start(); else Sound.setMuted(!Sound.muted); });
+$('trackFile').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  Sound.useTrack(URL.createObjectURL(f), f.name.replace(/\.[^.]+$/, ''));
+  Sound.start();
+});
+// o som começa na primeira interação (exigência dos navegadores)
+document.addEventListener('pointerdown', e => {
+  if (Sound.running || e.target.closest('#soundBtn,label[for="trackFile"]')) return;
+  Sound.start();
+}, true);
+document.addEventListener('keydown', e => {
+  if (scene === 'portrait') return;
+  if (e.key === 'ArrowRight') nextPalette(1);
+  else if (e.key === 'ArrowLeft') nextPalette(-1);
+});
+cv.addEventListener('pointerdown', e => {
+  if (scene === 'portrait') return;
+  spawnShoot(e.clientX, e.clientY, e.clientX > W/2 ? -1 : 1);
+  for (let i = 0; i < 26; i++){
+    const a = Math.random() * 6.28, sp = 30 + Math.random() * 120, life = 0.5 + Math.random() * 0.7;
+    parts.push({ x: e.clientX, y: e.clientY, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life, max: life, r: 1.5, c: i % 2 ? '#ffffff' : '#ff3fb4' });
+  }
+});
+addEventListener('pointermove', e => { tmx = (e.clientX / W) * 2 - 1; tmy = (e.clientY / H) * 2 - 1; });
+
+if (CONFIG.musicUrl) Sound.useTrack(CONFIG.musicUrl, 'sua trilha');
+
+function onEvent(ev){
+  if (ev.type === 'kick') pulse = 1;
+  else if (ev.type === 'snare') flash = Math.max(flash, 0.6);
+  else if (ev.type === 'bar'){
+    if (scene === 'portrait' && ev.bar % 2 === 0){ P.target = 1; P.nextSwap = 1.8; }
+    if (scene === 'cosmos' && Math.random() < 0.5) spawnShoot(Math.random() * W, Math.random() * H * 0.2);
+    if (journey.phase === 'infinite' && ev.bar % 2 === 0) spawnObj(ZMAX, 'ring');
+  }
+}
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; T += dt;
+  Sound.poll(onEvent);
+  const silent = !Sound.running || Sound.muted;
+  if (spaceOn && silent){ beatClock += dt; if (beatClock >= 0.625){ beatClock -= 0.625; pulse = 1; } }
+
+  if (journey.phase !== 'idle') journey.t += dt;
+  if (journey.phase === 'cosmos' && journey.t >= COSMOS_HOLD) startLift();
+  else if (journey.phase === 'lift' && journey.t >= LIFT) startInfinite();
+  if (journey.phase === 'infinite'){
+    ly += dt * 2380 * (1 + warp * 6);
+    hudT -= dt; if (hudT <= 0){ hudT = 0.2; ui.dist.textContent = 'Região ' + zoneN + ' · ' + fmt.format(ly) + ' anos-luz percorridos'; }
+    zoneT += dt; zone.fade = Math.min(1, zone.fade + dt / 3);
+    if (prevZone){ prevZone.fade -= dt / 3; if (prevZone.fade <= 0) prevZone = null; }
+    if (zoneT >= zone.dur) newZone();
+    spawnT -= dt; if (spawnT <= 0){ spawnObj(ZMAX); spawnT = zone.rate * (0.6 + Math.random() * 0.8); }
+    if (silent){ ringT -= dt; if (ringT <= 0){ spawnObj(ZMAX, 'ring'); ringT = 5; } }
+  }
+
+  if (scene === 'portrait' || busy) updatePortrait(dt, T);
+  if (spaceOn) drawSpace(dt);
+  requestAnimationFrame(frame);
+}
+applyFace(0, 0, 0);
+updateHud();
+requestAnimationFrame(frame);
