@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>synthuniverse</title>
+<meta name="description" content="Um retrato synthwave que se dissolve em um universo infinito.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Chakra+Petch:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" data-scene="portrait">
+  <canvas id="space" aria-hidden="true"></canvas>
+
+  <div class="paper" aria-hidden="true">
+    <div class="floor"></div>
+    <p class="bigword"><span>synth</span><span>universe</span></p>
+  </div>
+
+  <div class="figure-pos">
+    <div class="ring" aria-hidden="true"></div>
+    <div class="backsun" aria-hidden="true"></div>
+    <div class="figure" id="figure">
+      <svg viewBox="30 64 368 476" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Retrato ilustrado e simétrico: mulher morena de pele levemente azulada, contornos em nanquim, olhando para você e dando um sorrisinho">
+        <defs>
+          <clipPath id="faceClip"><path d="M216,98 C242,98 262,112 267,140 C270,160 270,186 266,210 C262,236 255,262 241,280 C234,289 227,294 220,294 C211,294 202,289 193,280 C176,262 165,236 160,210 C156,186 156,160 160,140 C166,112 190,98 216,98 Z"/></clipPath>
+          <clipPath id="neckClip"><path d="M194,268 C195,304 188,336 174,356 L256,356 C243,336 237,304 238,268 Z"/></clipPath>
+          <clipPath id="bodyClip"><path d="M184,344 C142,354 88,366 62,392 C38,416 28,456 24,500 L22,540 L406,540 L404,500 C400,456 390,416 366,392 C340,366 286,354 244,344 Z"/></clipPath>
+          <clipPath id="eyeNClip"><path d="M171,171 C177,161 194,159 203,169 C196,178 180,179 171,171 Z"/></clipPath>
+          <clipPath id="eyeFClip"><path d="M257,171 C251,161 234,159 225,169 C232,178 248,179 257,171 Z"/></clipPath>
+          <linearGradient id="hairG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262a42"/><stop offset="1" stop-color="#08080e"/></linearGradient>
+          <linearGradient id="topG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1b28"/><stop offset="1" stop-color="#07070c"/></linearGradient>
+          <radialGradient id="irisG" cx=".5" cy=".55" r=".5"><stop offset="0" stop-color="#8a9bc2"/><stop offset=".45" stop-color="#3b4670"/><stop offset=".85" stop-color="#1a1f36"/><stop offset="1" stop-color="#07080e"/></radialGradient>
+          <filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+
+        <g transform="translate(0 14)"><g id="headBack">
+          <path class="ink" fill="url(#hairG)" d="M216,74 C160,72 132,110 132,168 C132,226 128,290 116,352 C112,380 116,410 124,440 L306,440 C312,410 316,380 312,352 C300,290 296,226 296,168 C296,110 272,72 216,74 Z"/>
+          <path class="tip" d="M146,112 C138,170 140,240 128,320 C146,240 146,172 152,116 Z"/>
+          <path class="tip" d="M282,112 C290,170 288,240 300,320 C282,240 282,172 276,116 Z"/>
+        </g></g>
+
+        <g transform="translate(214 0) scale(.88 1) translate(-214 0)"><g id="bodyG">
+          <path class="ink skin" d="M184,344 C142,354 88,366 62,392 C38,416 28,456 24,500 L22,540 L406,540 L404,500 C400,456 390,416 366,392 C340,366 286,354 244,344 Z"/>
+          <g clip-path="url(#bodyClip)">
+            <path class="shade" d="M178,334 C194,374 234,374 250,334 Z"/>
+            <ellipse class="shade" cx="40" cy="470" rx="46" ry="96" opacity=".55"/>
+            <ellipse class="shade" cx="388" cy="470" rx="46" ry="96" opacity=".55"/>
+            <ellipse class="light" cx="146" cy="410" rx="56" ry="18" opacity=".45"/>
+            <ellipse class="light" cx="282" cy="410" rx="56" ry="18" opacity=".45"/>
+            <path class="shade" opacity=".55" d="M108,446 C140,418 186,422 212,458 C188,436 142,432 108,446 Z"/>
+            <path class="shade" opacity=".55" d="M320,446 C288,418 242,422 216,458 C240,436 286,432 320,446 Z"/>
+          </g>
+          <path class="skin" d="M194,268 C195,304 188,336 174,356 L256,356 C243,336 237,304 238,268 Z"/>
+          <g clip-path="url(#neckClip)">
+            <path class="shade" d="M180,258 C196,296 232,296 248,258 L252,320 C236,312 192,312 176,320 Z"/>
+          </g>
+          <path class="line" d="M194,268 C195,304 188,336 174,356"/>
+          <path class="line" d="M238,268 C237,304 243,336 256,356"/>
+          <path class="line soft" d="M116,392 C146,384 172,388 194,380"/>
+          <path class="line soft" d="M312,392 C282,384 256,388 234,380"/>
+          <path class="line soft" d="M205,386 C209,392 219,392 223,386"/>
+          <path class="line soft" d="M108,446 C140,418 186,422 212,458"/>
+          <path class="line soft" d="M320,446 C288,418 242,422 216,458"/>
+          <path class="ink" fill="url(#topG)" d="M30,470 C72,440 132,428 176,442 C194,448 206,460 214,468 C222,460 234,448 252,442 C296,428 356,440 398,470 L406,540 L22,540 Z"/>
+          <path class="neon" filter="url(#glow)" d="M34,481 C74,452 132,440 176,454 C194,460 206,470 214,479 C222,470 234,460 252,454 C296,440 354,452 394,481"/>
+          <path class="line soft" stroke="#30324a" d="M214,477 L214,540"/>
+        </g></g>
+
+        <g transform="translate(0 14)"><g id="headFront">
+          <g transform="translate(0 168) scale(1 .85) translate(0 -168)">
+          <path class="ink skin" d="M216,98 C242,98 262,112 267,140 C270,160 270,186 266,210 C262,236 255,262 241,280 C234,289 227,294 220,294 C211,294 202,289 193,280 C176,262 165,236 160,210 C156,186 156,160 160,140 C166,112 190,98 216,98 Z"/>
+          <g clip-path="url(#faceClip)">
+            <path class="shade" opacity=".75" d="M150,252 C176,290 200,302 214,302 C228,302 252,290 278,252 L290,330 L138,330 Z"/>
+            <path class="shade" opacity=".6" d="M164,212 C176,226 190,232 200,232 C186,240 170,234 160,222 Z"/>
+            <path class="shade" opacity=".6" d="M264,212 C252,226 238,232 228,232 C242,240 258,234 268,222 Z"/>
+            <ellipse class="shade" opacity=".35" cx="187" cy="166" rx="23" ry="12"/>
+            <ellipse class="shade" opacity=".35" cx="241" cy="166" rx="23" ry="12"/>
+            <path class="shade" opacity=".2" d="M213,180 C212,194 210,206 208,216 L212,218 C214,206 215,194 216,180 Z"/>
+            <path class="shade" opacity=".6" d="M229,180 C230,194 233,206 236,217 L230,219 C228,206 227,194 226,180 Z"/>
+            <path class="shade" opacity=".35" d="M256,128 C268,170 268,222 244,280 L300,300 L300,120 Z"/>
+            <ellipse class="shade" opacity=".5" cx="221" cy="229" rx="12" ry="3.5"/>
+            <ellipse class="shade" opacity=".45" cx="220" cy="265" rx="10" ry="3"/>
+            <ellipse id="cheekLight" class="light" opacity=".35" cx="178" cy="208" rx="14" ry="7"/>
+            <ellipse id="cheekLightR" class="light" opacity=".25" cx="252" cy="208" rx="10" ry="7"/>
+            <ellipse class="light" opacity=".45" cx="214" cy="124" rx="34" ry="12"/>
+            <path class="light" opacity=".28" d="M218,190 C218,196 218,204 218.5,212 L221.5,212 C222,204 222,196 222,190 Z"/>
+            <ellipse class="light" opacity=".55" cx="221" cy="213" rx="3.5" ry="2.2"/>
+            <ellipse class="light" opacity=".45" cx="219" cy="283" rx="9" ry="4"/>
+          </g>
+
+          <g id="brows">
+            <path class="brow" transform="translate(4 0)" d="M164,156 C174,144 192,140 207,148 C193,145 178,148 167,158 Z"/>
+            <path class="brow" transform="translate(246 0) scale(.86 1) translate(-242 0)" d="M264,156 C254,144 236,140 221,148 C235,145 250,148 261,158 Z"/>
+          </g>
+          <g id="eyeN"><g transform="translate(4 0)">
+            <path class="eye-white" d="M171,171 C177,161 194,159 203,169 C196,178 180,179 171,171 Z"/>
+            <g clip-path="url(#eyeNClip)">
+              <g id="irisN">
+                <circle cx="187" cy="170" r="7.8" fill="url(#irisG)" stroke="#07080e" stroke-width="1"/>
+                <circle cx="187" cy="170" r="3.3" fill="#030305"/>
+                <circle cx="189.8" cy="167" r="1.9" fill="#f2f5fc"/>
+                <circle cx="184" cy="173.4" r=".9" fill="#c9d3ea"/>
+              </g>
+              <path fill="#222943" opacity=".5" d="M166,158 L208,158 L208,167 C194,161 180,162 166,170 Z"/>
+            </g>
+            <path class="lid" d="M168,171 C174,157 196,154 205,168 C196,160 178,161 172,172 Z"/>
+            <path class="lid" d="M169,170 C166,166 162,163 158,162 C162,165 165,169 171,172 Z"/>
+            <path class="ink-line soft" stroke-width="1.3" d="M172,163 C180,154 196,153 204,160"/>
+            <path class="ink-line soft" stroke-width="1.3" d="M173,174 C182,180 196,179 203,171"/>
+            <path class="ink-line soft" stroke-width="1" d="M176,176 L174.5,179 M181,178 L180.2,181"/></g>
+          </g>
+          <g id="eyeF"><g transform="translate(246 0) scale(.86 1) translate(-241 0)">
+            <path class="eye-white" d="M257,171 C251,161 234,159 225,169 C232,178 248,179 257,171 Z"/>
+            <g clip-path="url(#eyeFClip)">
+              <g id="irisF">
+                <circle cx="241" cy="170" r="7.8" fill="url(#irisG)" stroke="#07080e" stroke-width="1"/>
+                <circle cx="241" cy="170" r="3.3" fill="#030305"/>
+                <circle cx="243.8" cy="167" r="1.9" fill="#f2f5fc"/>
+                <circle cx="238" cy="173.4" r=".9" fill="#c9d3ea"/>
+              </g>
+              <path fill="#222943" opacity=".5" d="M262,158 L220,158 L220,167 C234,161 248,162 262,170 Z"/>
+            </g>
+            <path class="lid" d="M260,171 C254,157 232,154 223,168 C232,160 250,161 256,172 Z"/>
+            <path class="lid" d="M259,170 C262,166 266,163 270,162 C266,165 263,169 257,172 Z"/>
+            <path class="ink-line soft" stroke-width="1.3" d="M256,163 C248,154 232,153 224,160"/>
+            <path class="ink-line soft" stroke-width="1.3" d="M255,174 C246,180 232,179 225,171"/>
+            <path class="ink-line soft" stroke-width="1" d="M252,176 L253.5,179 M247,178 L247.8,181"/></g>
+          </g>
+
+          <g transform="translate(7 0)">
+          <path class="ink-line" stroke-width="1.8" d="M204,216 C200,221 204,225 209,223"/>
+          <path class="ink-line" stroke-width="1.8" d="M224,216 C228,221 224,225 219,223"/>
+          <path class="ink-line" stroke-width="1.6" d="M209,223 C212,225 216,225 219,223"/>
+          <path class="ink-line soft" stroke-width="1" d="M211,229 L210.5,238 M217,229 L217.5,238"/>
+          </g>
+          <g transform="translate(220 0) scale(.95 1) translate(-214 0)">
+          <path id="lipUp" class="lip-up" d=""/>
+          <path id="lipLow" class="lip-low" d=""/>
+          <path id="mouthLine" class="ink-line" stroke-width="2.2" d=""/>
+          <path id="crease" class="ink-line soft" stroke-width="1.4" opacity="0" d="M190,232 C185,240 185,248 189,255"/>
+          <path id="dimple" class="ink-line soft" stroke-width="1.4" opacity="0" d="M238,232 C243,240 243,248 239,255"/>
+          </g>
+
+          </g>
+          <path class="ink" fill="url(#hairG)" d="M214,80 C176,78 148,110 146,164 C144,214 150,258 158,298 C164,330 156,360 146,392 C140,414 142,432 150,448 L156,434 L163,446 C166,422 174,398 182,374 C190,342 186,302 178,264 C170,226 168,192 170,160 C174,128 192,104 214,92 Z"/>
+          <path class="ink" fill="url(#hairG)" d="M214,80 C252,78 280,110 282,164 C284,214 278,258 270,298 C264,330 272,360 282,392 C288,414 286,432 278,448 L272,434 L265,446 C262,422 254,398 246,374 C238,342 242,302 250,264 C258,226 260,192 258,160 C254,128 236,104 214,92 Z"/>
+          <path class="tip" d="M200,90 C174,104 156,136 154,190 C162,140 178,112 204,96 Z"/>
+          <path class="tip" d="M228,90 C254,104 272,136 274,190 C266,140 250,112 224,96 Z"/>
+          <path class="tip faint" d="M160,250 C166,300 166,350 154,420 C172,350 174,300 166,252 Z"/>
+          <path class="tip faint" d="M268,250 C262,300 262,350 274,420 C256,350 254,300 262,252 Z"/>
+        </g></g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="scan" aria-hidden="true"></div>
+  <div class="cosmos-title" aria-hidden="true">
+    <h2>synthuniverse</h2>
+    <p>lado b · cosmos</p>
+  </div>
+
+  <header class="hud-top">
+    <div class="logo"><i aria-hidden="true"></i>synthuniverse</div>
+    <div class="controls">
+      <div class="seg" aria-label="Etapas da viagem">
+        <span id="stepP" aria-current="step">Retrato</span><span id="stepC">Cosmos</span><span id="stepI">Infinito</span>
+      </div>
+      <button type="button" class="chip" id="soundBtn" aria-pressed="false"><span class="bars" aria-hidden="true"><b></b><b></b><b></b></span><span id="soundTxt">Ligar som</span></button>
+      <label class="chip" for="trackFile">Sua música<input class="sr" type="file" id="trackFile" accept="audio/*"></label>
+    </div>
+  </header>
+
+  <footer class="hud-bottom">
+    <div class="info" aria-live="polite">
+      <span class="label" id="sceneLabel">Cena 01 · Retrato</span>
+      <span class="name" id="sceneName">Azul em nanquim</span>
+      <span class="hint" id="sceneHint">Passe o cursor (ou toque) nela para ver o sorriso.</span>
+      <span class="track" id="distance" hidden></span>
+      <span class="track" id="trackName">♪ Trilha sintetizada · 96 BPM · Lá menor</span>
+    </div>
+    <button type="button" class="cta" id="cta"><span id="ctaTxt">Entrar no universo</span>
+      <svg viewBox="0 0 18 10" aria-hidden="true"><path d="M0 5h16M12 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+  </footer>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
